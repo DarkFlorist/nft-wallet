@@ -1,0 +1,32 @@
+{
+	"compilerOptions": {
+		"target": "ES2021",
+		"module": "ES2020",
+		"moduleResolution": "node16",
+		"rootDir": "app/ts",
+		"outDir": "app/js",
+		"sourceMap": true,
+		"inlineSources": true,
+		"declaration": true,
+		"declarationMap": true,
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noImplicitReturns": true,
+		"noImplicitThis": true,
+		"jsx": "react-jsx",
+		"jsxImportSource": "preact",
+		"lib": [
+			"ES2021",
+			"DOM"
+		],
+		"typeRoots": [
+			"./node_modules/@types",
+			"./typings"
+		]
+	},
+	"include": [
+		"./app/ts/**/*.ts",
+		"./app/ts/**/*.tsx"
+	]
+}
