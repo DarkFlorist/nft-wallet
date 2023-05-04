@@ -1,6 +1,6 @@
 import { Signal, useSignal } from "@preact/signals";
 
-export const TokenPicker = ({ show }: { show: Signal<boolean> }) => {
+export const TokenPicker = ({ show, nft }: { show: Signal<boolean>, nft: Signal<{ address: string, id: bigint, owner: string, name: string | undefined, tokenURI: string | undefined }> }) => {
 	const results = useSignal<Array<{ name: string, id: bigint, contract: string }>>([])
 
 	if (!show.value) return null

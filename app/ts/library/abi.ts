@@ -55,4 +55,5 @@ export const ERC721ABI: InterfaceAbi = [
 	'function setApprovalForAll(address operator, bool _approved) external',
 	'function getApproved(uint256 tokenId) external view returns(address operator)',
 	'function isApprovedForAll(address owner, address operator) external view returns(bool)'
+	'function tokenURI(uint256 id) external view returns (string memory)'
 ]

@@ -3,16 +3,18 @@ import { connectBrowserProvider, ProviderStore } from "../library/provider.js";
 import { BlockInfo } from "../library/types.js";
 import { Button } from "./Button.js";
 import { TokenPicker } from "./TokenPicker.js";
+import { detectNft } from "../library/identifyTokens.js"
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const showTokenPicker = useSignal<boolean>(false)
+	const selectedNft = useSignal<{ address: string, id: bigint, owner: string, name: string | undefined, tokenURI: string | undefined }>()
 
-	function transferNft() { }
-
+	function transferNft() {
+	}
 
 	return (
 		<div className="flex flex-col gap-4 w-full max-w-screen-xl">
-			<TokenPicker show={showTokenPicker} />
+			<TokenPicker show={showTokenPicker} nft={selectedNft} />
 			<h2 className="text-4xl font-semibold">Transfer</h2>
 			<div className="flex gap-4">
 				<div className="flex flex-col gap-4 flex-grow">
