@@ -1,4 +1,4 @@
-import { Contract, Provider, Interface, ZeroAddress } from "ethers";
+import { Contract, Provider, Interface, ZeroAddress, BytesLike } from "ethers";
 import { ERC721ABI, MulticallABI } from "./abi.js";
 
 export async function detectNft(address: string, id: bigint, provider: Provider) {
@@ -29,7 +29,7 @@ export async function detectNft(address: string, id: bigint, provider: Provider)
 	]
 
 	const [isERC721, owner, hasMetadata, name, tokenURI]: { success: boolean, returnData: BytesLike }[] = await multicall.tryAggregate.staticCall(false, calls)
-	if (isERC721.success === false || nftInterface.decodeFunctionResult('supportsInterface', isERC721.returnData) === false) return new Error('No ERC721 found at address')
+	if (isERC721.success === false || nftInterface.decodeFunctionResult('supportsInterface', isERC721.returnData)[0] === false) return new Error('No ERC721 found at address')
 	if (owner.success === false || nftInterface.decodeFunctionResult('ownerOf', owner.returnData)[0] === ZeroAddress) return new Error('No ERC721 found at address')
 	if (!owner.success) return new Error('Token ID does not exist')
 	return {
