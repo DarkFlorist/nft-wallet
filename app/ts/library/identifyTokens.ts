@@ -35,8 +35,8 @@ export async function detectNft(address: string, id: bigint, provider: Provider)
 	return {
 		address,
 		id,
-		owner: nftInterface.decodeFunctionResult('ownerOf' owner.returnData)[0],
-		name: hasMetadata.success ? nftInterface.decodeFunctionResult('name' name.returnData)[0] : undefined,
-		tokenURI: hasMetadata.success ? nftInterface.decodeFunctionResult('tokenURI' tokenURI.returnData)[0] : undefined,
+		owner: nftInterface.decodeFunctionResult('ownerOf', owner.returnData)[0],
+		name: hasMetadata.success ? nftInterface.decodeFunctionResult('name', name.returnData)[0] : undefined,
+		tokenURI: hasMetadata.success ? nftInterface.decodeFunctionResult('tokenURI', tokenURI.returnData)[0] : undefined,
 	}
 }
