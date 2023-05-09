@@ -12,7 +12,7 @@ export const Navbar = ({
 }) => {
 	return (
 		<div className='flex flex-col w-full sm:flex-row items-center justify-between gap-4 border-slate-400/30'>
-			<h1 className='font-extrabold text-2xl'>NFT Wallet</h1>
+			<h1 className='font-extrabold text-4xl'>NFT Wallet</h1>
 			<div className='flex gap-4 items-center'>
 				{provider.value ? (
 					<>

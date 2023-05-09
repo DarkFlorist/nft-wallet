@@ -29,9 +29,14 @@ export async function detectNft(address: string, id: bigint, provider: Provider)
 	]
 
 	const [isERC721, owner, hasMetadata, name, tokenURI]: { success: boolean, returnData: BytesLike }[] = await multicall.tryAggregate.staticCall(false, calls)
-	if (isERC721.success === false || nftInterface.decodeFunctionResult('supportsInterface', isERC721.returnData)[0] === false) return new Error('No ERC721 found at address')
-	if (owner.success === false || nftInterface.decodeFunctionResult('ownerOf', owner.returnData)[0] === ZeroAddress) return new Error('No ERC721 found at address')
-	if (!owner.success) return new Error('Token ID does not exist')
+	try {
+		if (isERC721.success === false || nftInterface.decodeFunctionResult('supportsInterface', isERC721.returnData)[0] === false) throw new Error('No ERC721 found at address')
+		if (owner.success === false || nftInterface.decodeFunctionResult('ownerOf', owner.returnData)[0] === ZeroAddress) throw new Error('No ERC721 found at address')
+	} catch {
+		// If any errors occur from deocoding returnData then it must not be ERC721
+		throw new Error('No ERC721 found at address')
+	}
+	if (!owner.success) throw new Error('Token ID does not exist')
 	return {
 		address,
 		id,
