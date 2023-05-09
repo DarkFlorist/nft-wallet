@@ -21,7 +21,7 @@ export const Navbar = ({
 							<p className='font-bold'>{provider.value.walletAddress}</p>
 							<span className='text-gray-400 text-sm'>{provider.value.chainId === 1n ? 'Mainnet' : `Network ${provider.value.chainId.toString()}`}</span>
 						</div >
-						<Blockie seed={provider.value.walletAddress} size={12} />
+						<Blockie seed={provider.value.walletAddress.toLowerCase()} size={12} />
 					</>
 				) : (
 					<>
