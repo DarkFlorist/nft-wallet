@@ -1,7 +1,30 @@
 import { Signal, useSignal } from "@preact/signals";
+import { getAddress } from "ethers"
+import { JSX } from "preact/jsx-runtime";
 
-export const TokenPicker = ({ show }: { show: Signal<boolean> }) => {
+export const TokenPicker = ({ show }: { show: Signal<boolean>, nft: Signal<{ address: string, id: bigint, owner: string, name: string | undefined, tokenURI: string | undefined } | undefined> }) => {
 	const results = useSignal<Array<{ name: string, id: bigint, contract: string }>>([])
+
+	const addressInput = useSignal<string | undefined>(undefined)
+	const idInput = useSignal<bigint | undefined>(undefined)
+
+	function validateAddressInput(event: JSX.TargetedEvent<HTMLInputElement>) {
+		try {
+			addressInput.value = getAddress(event.currentTarget.value.toLowerCase())
+		} catch (error) {
+			console.log(error)
+			addressInput.value = undefined
+		}
+	}
+
+	function validateIdInput(event: JSX.TargetedEvent<HTMLInputElement>) {
+		try {
+			idInput.value = BigInt(event.currentTarget.value)
+		} catch (error) {
+			console.log(error)
+			idInput.value = undefined
+		}
+	}
 
 	if (!show.value) return null
 	else return (
@@ -12,11 +35,11 @@ export const TokenPicker = ({ show }: { show: Signal<boolean> }) => {
 				<div className="flex gap-4">
 					<div className="flex flex-col flex-grow border border-white/50 p-2 bg-black">
 						<span className="text-sm text-white/50">Contract Address</span>
-						<input type="text" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="0x133...789" />
+						<input onInput={validateAddressInput} type="text" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="0x133...789" />
 					</div>
 					<div className="flex flex-col border border-white/50 p-2 bg-black">
 						<span className="text-sm text-white/50">Token ID</span>
-						<input type="number" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="1" />
+						<input onInput={validateIdInput} type="number" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="1" />
 					</div>
 				</div>
 				<div>
