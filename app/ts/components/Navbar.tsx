@@ -1,6 +1,7 @@
 import { Signal } from '@preact/signals'
 import { connectBrowserProvider, ProviderStore } from '../library/provider.js'
 import { BlockInfo } from '../library/types.js'
+import Blockie from './Blockie.js'
 import { Button } from './Button.js'
 
 export const Navbar = ({
@@ -20,7 +21,7 @@ export const Navbar = ({
 							<p className='font-bold'>{provider.value.walletAddress}</p>
 							<span className='text-gray-400 text-sm'>{provider.value.chainId === 1n ? 'Mainnet' : `Network ${provider.value.chainId.toString()}`}</span>
 						</div >
-						<div class='h-12 w-12 bg-white/20'></div>
+						<Blockie seed={provider.value.walletAddress.toLowerCase()} size={12} />
 					</>
 				) : (
 					<>
