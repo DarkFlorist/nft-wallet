@@ -116,13 +116,13 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 								</div>
 								<div>
 									<span className="text-sm text-white/50">Token Metadata</span>
-									{selectedNft.value ? <a className="block hover:underline" target="_blank" href={selectedNft.value.tokenURI}>{selectedNft.value.tokenURI}</a> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+									{selectedNft.value ? <a className="text-ellipsis overflow-hidden block hover:underline" target="_blank" href={selectedNft.value.tokenURI}>{selectedNft.value.tokenURI}</a> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
 								</div>
 							</div>
 							<div className="flex flex-col gap-4 flex-1">
 								<div>
 									<span className="text-sm text-white/50">Contract Address</span>
-									{selectedNft.value ? <span className="flex items-center gap-2"><Blockie seed={selectedNft.value.address.toLowerCase()} size={4} />{selectedNft.value.address}</span> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+									{selectedNft.value ? <span className="overflow-hidden truncate w-full flex items-center gap-2"><Blockie seed={selectedNft.value.address.toLowerCase()} size={4} />{selectedNft.value.address}</span> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
 								</div>
 								<div>
 									<span className="text-sm text-white/50">Owner</span>
