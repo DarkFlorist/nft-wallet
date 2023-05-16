@@ -7,6 +7,7 @@ import { BlockInfo } from "../library/types.js";
 import { Button } from "./Button.js";
 import { TokenPicker } from "./TokenPicker.js";
 import { transferNft } from "../library/transactions.js";
+import Blockie from "./Blockie.js";
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const showTokenPicker = useSignal<boolean>(false)
@@ -90,37 +91,44 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		<div className="flex flex-col gap-4 w-full max-w-screen-xl">
 			<TokenPicker show={showTokenPicker} nft={selectedNft} />
 			<h2 className="text-2xl font-semibold">Transfer NFTs</h2>
-			<div className="flex gap-4">
-				<div className="flex flex-col flex-grow border border-white/50 p-2 bg-black">
+			<div className="flex gap-4 flex-col sm:flex-row">
+				<div className="flex flex-col flex-grow border border-white/50 p-2 bg-black focus-within:bg-white/20">
 					<span className="text-sm text-white/50">Contract Address</span>
 					<input onInput={validateAddressInput} type="text" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="0x133...789" />
 				</div>
-				<div className="flex flex-col border border-white/50 p-2 bg-black">
+				<div className="flex flex-col border border-white/50 p-2 bg-black focus-within:bg-white/20">
 					<span className="text-sm text-white/50">Token ID</span>
 					<input onInput={validateIdInput} type="number" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="1" />
 				</div>
 			</div>
 			{fetchingStates.value === 'empty' ? null : (
-				<div className="flex flex-row flex-wrap border border-white/50 p-4 h-max justify-between items-center">
+				<div className="flex flex-row flex-wrap border border-white/50 p-4 h-max gap-4">
 					{fetchingStates.value === 'fetching' ?
 						<>
-							<div>
-								<span className="text-sm text-white/50">Collection Name</span>
-								{selectedNft.value ? <p>{selectedNft.value.name}</p> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+							<div className="flex flex-col gap-4 flex-1">
+								<div>
+									<span className="text-sm text-white/50">Collection Name</span>
+									{selectedNft.value ? <p>{selectedNft.value.name}</p> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+								</div>
+								<div>
+									<span className="text-sm text-white/50">Token ID</span>
+									{selectedNft.value ? <p>{selectedNft.value.id}</p> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+								</div>
+								<div>
+									<span className="text-sm text-white/50">Token Metadata</span>
+									{selectedNft.value ? <a className="text-ellipsis overflow-hidden block hover:underline" target="_blank" href={selectedNft.value.tokenURI}>{selectedNft.value.tokenURI}</a> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+								</div>
 							</div>
-							<div>
-								<span className="text-sm text-white/50">Contract Address</span>
-								{selectedNft.value ? <p>{selectedNft.value.address}</p> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+							<div className="flex flex-col gap-4 flex-1">
+								<div>
+									<span className="text-sm text-white/50">Contract Address</span>
+									{selectedNft.value ? <span className="overflow-hidden truncate w-full flex items-center gap-2"><Blockie seed={selectedNft.value.address.toLowerCase()} size={4} />{selectedNft.value.address}</span> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+								</div>
+								<div>
+									<span className="text-sm text-white/50">Owner</span>
+									{selectedNft.value ? <span className="flex items-center gap-2"><Blockie seed={selectedNft.value.owner.toLowerCase()} size={4} />{selectedNft.value.owner}</span> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+								</div>
 							</div>
-							<div>
-								<span className="text-sm text-white/50">Token ID</span>
-								{selectedNft.value ? <p>{selectedNft.value.id}</p> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
-							</div>
-							<div>
-								<span className="text-sm text-white/50">Owner</span>
-								{selectedNft.value ? <p>{selectedNft.value.owner}</p> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
-							</div>
-							<div className="animate-pulse bg-white/20 w-32 h-32"> </div>
 						</>
 						: null}
 					{fetchingStates.value === 'notfound' ? <p>No NFT found at address</p> : null}

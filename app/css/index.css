@@ -551,14 +551,6 @@ video {
 	display: none;
 }
 
-.h-12 {
-	height: 3rem;
-}
-
-.h-32 {
-	height: 8rem;
-}
-
 .h-4 {
 	height: 1rem;
 }
@@ -580,14 +572,6 @@ video {
 	min-height: 100vh;
 }
 
-.w-12 {
-	width: 3rem;
-}
-
-.w-32 {
-	width: 8rem;
-}
-
 .w-64 {
 	width: 16rem;
 }
@@ -603,6 +587,10 @@ video {
 
 .max-w-screen-xl {
 	max-width: 1280px;
+}
+
+.flex-1 {
+	flex: 1 1 0%;
 }
 
 .flex-grow {
@@ -631,10 +619,6 @@ video {
 	flex-wrap: wrap;
 }
 
-.items-end {
-	align-items: flex-end;
-}
-
 .items-center {
 	align-items: center;
 }
@@ -647,8 +631,30 @@ video {
 	justify-content: space-between;
 }
 
+.gap-2 {
+	gap: 0.5rem;
+}
+
 .gap-4 {
 	gap: 1rem;
+}
+
+.overflow-hidden {
+	overflow: hidden;
+}
+
+.truncate {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.text-ellipsis {
+	text-overflow: ellipsis;
+}
+
+.break-all {
+	word-break: break-all;
 }
 
 .rounded {
@@ -733,11 +739,6 @@ video {
 	line-height: 2rem;
 }
 
-.text-4xl {
-	font-size: 2.25rem;
-	line-height: 2.5rem;
-}
-
 .text-sm {
 	font-size: 0.875rem;
 	line-height: 1.25rem;
@@ -750,10 +751,6 @@ video {
 
 .font-bold {
 	font-weight: 700;
-}
-
-.font-extrabold {
-	font-weight: 800;
 }
 
 .font-semibold {
@@ -796,6 +793,10 @@ video {
 
 .focus-within\:bg-white\/20:focus-within {
 	background-color: rgb(255 255 255 / 0.2);
+}
+
+.hover\:underline:hover {
+	text-decoration-line: underline;
 }
 
 .focus\:bg-white\/20:focus {
