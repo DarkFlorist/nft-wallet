@@ -15,7 +15,7 @@ export const Button = ({
 	onClick: () => unknown
 }) => {
 	return (
-		<button onClick={onClick} disabled={disabled ?? false} className={classNames[variant ?? 'primary']}>
+		<button onClick={onClick} disabled={disabled ?? false} className={classNames[variant ?? 'primary']} >
 			{children}
 		</button>
 	)
