@@ -13,7 +13,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 	const showTokenPicker = useSignal<boolean>(false)
 	const selectedNft = useSignal<{ address: string, id: bigint, owner: string, name?: string, symbol?: string, tokenURI?: string } | undefined>(undefined)
 
-	const fetchingStates = useSignal<'empty' | 'fetching' | 'notfound' | 'badid' | 'noprovider' | 'EOA' | 'contract' | 'ERC20'>('empty')
+	const fetchingStates = useSignal<'empty' | 'fetching' | 'notfound' | 'badid' | 'noprovider' | 'EOA' | 'contract' | 'ERC20' | 'ERC1155'>('empty')
 	const sendText = useComputed(() => {
 		if (!selectedNft.value) return 'Input Token Details'
 		if (selectedNft.value.owner !== provider.value?.walletAddress) return 'You do not own this token'
@@ -140,6 +140,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 					{fetchingStates.value === 'noprovider' ? <p>Connect wallet to load token details.</p> : null}
 					{fetchingStates.value === 'EOA' ? <p>Address provided is an EOA</p> : null}
 					{fetchingStates.value === 'ERC20' ? <p>Address provided is an ERC20 contract</p> : null}
+					{fetchingStates.value === 'ERC1155' ? <p>Address provided is an ERC1155 contract</p> : null}
 				</div>)}
 			<div className="flex flex-col border border-white/50 p-2 focus-within:bg-white/20">
 				<span className="text-sm text-white/50">Recipient Address</span>
