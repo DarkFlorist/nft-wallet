@@ -16,8 +16,9 @@ export const MulticallABI: InterfaceAbi = [
 ]
 
 export const TokenMetadataABI: InterfaceAbi = [
-	'function decimals() returns (string)',
-	'function symbol() returns (string)',
+	'function name() external view returns(string memory)',
+	'function symbol() external view returns(string memory)',
+	'function decimals() external view returns(uint8)',
 	'function balanceOf(address addr) returns (uint)',
 ]
 
@@ -40,9 +41,6 @@ export const ERC165ABI: InterfaceAbi = [
 export const ERC721ABI: InterfaceAbi = [
 	...TokenMetadataABI,
 	...ERC165ABI,
-	'function name() external view returns(string memory)',
-	'function symbol() external view returns(string memory)',
-	'function decimals() external view returns(uint8)',
 	'event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)',
 	'event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId)',
 	'event ApprovalForAll(address indexed owner, address indexed operator, bool approved)',

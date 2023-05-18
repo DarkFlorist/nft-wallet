@@ -2,7 +2,7 @@ import { Signal, useComputed, useSignal, useSignalEffect } from "@preact/signals
 import { getAddress } from "ethers";
 import { JSX } from "preact/jsx-runtime";
 import { connectBrowserProvider, ProviderStore } from "../library/provider.js";
-import { detectNft } from "../library/identifyTokens.js"
+import { itentifyAddress } from "../library/identifyTokens.js"
 import { BlockInfo } from "../library/types.js";
 import { Button } from "./Button.js";
 import { TokenPicker } from "./TokenPicker.js";
@@ -11,9 +11,9 @@ import Blockie from "./Blockie.js";
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const showTokenPicker = useSignal<boolean>(false)
-	const selectedNft = useSignal<{ address: string, id: bigint, owner: string, name: string | undefined, tokenURI: string | undefined } | undefined>(undefined)
+	const selectedNft = useSignal<{ address: string, id: bigint, owner: string, name?: string, symbol?: string, tokenURI?: string } | undefined>(undefined)
 
-	const fetchingStates = useSignal<'empty' | 'fetching' | 'notfound' | 'badid' | 'noprovider'>('empty')
+	const fetchingStates = useSignal<'empty' | 'fetching' | 'notfound' | 'badid' | 'noprovider' | 'EOA' | 'contract' | 'ERC20'>('empty')
 	const sendText = useComputed(() => {
 		if (!selectedNft.value) return 'Input Token Details'
 		if (selectedNft.value.owner !== provider.value?.walletAddress) return 'You do not own this token'
@@ -68,9 +68,13 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		}
 		fetchingStates.value = 'fetching'
 		try {
-			const nft = await detectNft(address, id, provider.value?.provider)
-			if (nft.address === addressInput.value && nft.id === idInput.value) {
-				return selectedNft.value = nft
+			const identifiedAddress = await itentifyAddress(address, id, provider.value?.provider)
+			if (identifiedAddress.address === addressInput.value && identifiedAddress.inputId === idInput.value) {
+				if (identifiedAddress.type === 'ERC721') {
+					selectedNft.value = identifiedAddress
+				} else {
+					fetchingStates.value = identifiedAddress.type
+				}
 			}
 		} catch (e: any) {
 			if ('message' in e) {
@@ -131,9 +135,11 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 							</div>
 						</>
 						: null}
-					{fetchingStates.value === 'notfound' ? <p>No NFT found at address</p> : null}
+					{fetchingStates.value === 'notfound' || fetchingStates.value === 'contract' ? <p>No NFT found at address</p> : null}
 					{fetchingStates.value === 'badid' ? <p>Found NFT collection, but token ID does not exist</p> : null}
 					{fetchingStates.value === 'noprovider' ? <p>Connect wallet to load token details.</p> : null}
+					{fetchingStates.value === 'EOA' ? <p>Address provided is an EOA</p> : null}
+					{fetchingStates.value === 'ERC20' ? <p>Address provided is an ERC20 contract</p> : null}
 				</div>)}
 			<div className="flex flex-col border border-white/50 p-2 focus-within:bg-white/20">
 				<span className="text-sm text-white/50">Recipient Address</span>
