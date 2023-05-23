@@ -8,12 +8,14 @@ import { Button } from "./Button.js";
 import { TokenPicker } from "./TokenPicker.js";
 import { transferNft } from "../library/transactions.js";
 import Blockie from "./Blockie.js";
+import { createRef } from "preact";
+import { knownNetworks } from "../library/networks.js";
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const showTokenPicker = useSignal<boolean>(false)
 	const selectedNft = useSignal<{ address: string, id: bigint, owner: string, name: string | undefined, tokenURI: string | undefined } | undefined>(undefined)
 
-	const fetchingStates = useSignal<'empty' | 'fetching' | 'notfound' | 'badid' | 'noprovider'>('empty')
+	const fetchingStates = useSignal<'empty' | 'fetching' | 'notfound' | 'badid' | 'noprovider' | 'wrongnetwork'>('empty')
 	const sendText = useComputed(() => {
 		if (!selectedNft.value) return 'Input Token Details'
 		if (selectedNft.value.owner !== provider.value?.walletAddress) return 'You do not own this token'
@@ -25,6 +27,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 
 	const addressInput = useSignal<string | undefined>(undefined)
 	const idInput = useSignal<bigint | undefined>(undefined)
+	const idInputRef = createRef<HTMLInputElement>()
 	const recipientInput = useSignal<string | undefined>(undefined)
 
 	useSignalEffect(() => {
@@ -33,10 +36,27 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 
 	function validateAddressInput(event: JSX.TargetedEvent<HTMLInputElement>) {
 		try {
-			addressInput.value = getAddress(event.currentTarget.value.toLowerCase())
+			const match = /^https?:\/\/opensea\.io\/assets\/([^\/]+)\/(0x[a-fA-F0-9]{40})\/(\d+)$/.exec(event.currentTarget.value)
+			if (match !== null) {
+				const [_, network, address, id] = match
+				const mappedNetwork = Object.keys(knownNetworks).reduce((match: string | undefined, chainId) => !match && knownNetworks[chainId].openseaSlug && knownNetworks[chainId].openseaSlug === network ? chainId : match, undefined)
+
+				if (!mappedNetwork) {
+					// @DEV This should only happen if OpenSea adds new networks. I added all of the networks they supported at the time to knownNetworks
+				}
+
+				// If wallet !== mappedNetwork, show error to switch
+				// I think error handling breaks here as we need to make sure sync with inputs and parsed state are in sync
+
+				addressInput.value = getAddress(address)
+				idInput.value = BigInt(id)
+				if (idInputRef.current) idInputRef.current.value = id
+				return event.currentTarget.value = address
+			}
+			return addressInput.value = getAddress(event.currentTarget.value.toLowerCase())
 		} catch (e) {
 			console.error(e)
-			addressInput.value = undefined
+			return addressInput.value = undefined
 		}
 	}
 
@@ -94,11 +114,11 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 			<div className="flex gap-4 flex-col sm:flex-row">
 				<div className="flex flex-col flex-grow border border-white/50 p-2 bg-black focus-within:bg-white/20">
 					<span className="text-sm text-white/50">Contract Address</span>
-					<input onInput={validateAddressInput} type="text" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="0x133...789" />
+					<input onInput={validateAddressInput} type="text" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="0x133...789 or OpenSea Item URL https://opensea.io/assets/..." />
 				</div>
 				<div className="flex flex-col border border-white/50 p-2 bg-black focus-within:bg-white/20">
 					<span className="text-sm text-white/50">Token ID</span>
-					<input onInput={validateIdInput} type="number" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="1" />
+					<input onInput={validateIdInput} ref={idInputRef} type="number" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="1" />
 				</div>
 			</div>
 			{fetchingStates.value === 'empty' ? null : (
@@ -134,6 +154,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 					{fetchingStates.value === 'notfound' ? <p>No NFT found at address</p> : null}
 					{fetchingStates.value === 'badid' ? <p>Found NFT collection, but token ID does not exist</p> : null}
 					{fetchingStates.value === 'noprovider' ? <p>Connect wallet to load token details.</p> : null}
+					{fetchingStates.value === 'wrongnetwork' ? <p>Your wallet is not on the same network as the linked item, please switch networks</p> : null}
 				</div>)}
 			<div className="flex flex-col border border-white/50 p-2 focus-within:bg-white/20">
 				<span className="text-sm text-white/50">Recipient Address</span>

@@ -11,6 +11,3 @@ declare global {
 }
 
 export type BlockInfo = { blockNumber: bigint; baseFee: bigint; priorityFee: bigint }
-
-export type PromiseState = 'pending' | 'resolved' | 'rejected'
-export type BundleInfo = { hash: string; state: PromiseState; details: string }
