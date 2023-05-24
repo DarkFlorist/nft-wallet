@@ -1,4 +1,4 @@
-import { Signal, useComputed, useSignal, useSignalEffect } from "@preact/signals";
+import { batch, Signal, useComputed, useSignal, useSignalEffect } from "@preact/signals";
 import { getAddress } from "ethers";
 import { JSX } from "preact/jsx-runtime";
 import { connectBrowserProvider, ProviderStore } from "../library/provider.js";
@@ -15,7 +15,8 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 	const showTokenPicker = useSignal<boolean>(false)
 	const selectedNft = useSignal<{ address: string, id: bigint, owner: string, name?: string, symbol?: string, tokenURI?: string } | undefined>(undefined)
 
-	const fetchingStates = useSignal<'empty' | 'fetching' | 'notfound' | 'badid' | 'noprovider' | 'EOA' | 'contract' | 'ERC20' | 'ERC1155'>('empty')
+	const fetchingStates = useSignal<'empty' | 'fetching' | 'notfound' | 'badid' | 'noprovider' | 'EOA' | 'contract' | 'ERC20' | 'ERC1155' | 'opensea'>('empty')
+	const openseaParseError = useSignal<string>('')
 	const sendText = useComputed(() => {
 		if (!selectedNft.value) return 'Input Token Details'
 		if (selectedNft.value.owner !== provider.value?.walletAddress) return 'You do not own this token'
@@ -38,22 +39,32 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		const openseaMatch = /^https?:\/\/opensea\.io\/assets\/([^\/]+)\/(0x[a-fA-F0-9]{40})\/(\d+)$/.exec(event.currentTarget.value)
 		if (openseaMatch === null) {
 			const value = event.currentTarget.value.toLowerCase().trim()
+			openseaParseError.value = ''
 			addressInput.value = /^0x[a-f0-9]*$/.test(value) && value.length === 42 ? getAddress(value) : undefined
 		} else {
+			// Parse OpenSea URL
 			const [_, network, address, id] = openseaMatch
 			const mappedNetwork = Object.keys(knownNetworks).reduce((match: string | undefined, chainId) => !match && knownNetworks[chainId].openseaSlug && knownNetworks[chainId].openseaSlug === network ? chainId : match, undefined)
 
 			if (!mappedNetwork) {
-				// @DEV This should only happen if OpenSea adds new networks. I added all of the networks they supported at the time to knownNetworks
+				batch(() => {
+					fetchingStates.value = 'opensea'
+					openseaParseError.value = "NFT Sender doesn't recognize network from OpenSea"
+				})
+			} else if (BigInt(mappedNetwork) !== provider.value?.chainId) {
+				batch(() => {
+					fetchingStates.value = 'opensea'
+					openseaParseError.value = `The NFT on the provided URL is on ${knownNetworks[mappedNetwork].displayName}, please change your wallet's network to ${knownNetworks[mappedNetwork].displayName}`
+				})
+			} else {
+				batch(() => {
+					openseaParseError.value = ''
+					addressInput.value = getAddress(address)
+					idInput.value = BigInt(id)
+					if (idInputRef.current) idInputRef.current.value = id
+					event.currentTarget.value = address
+				})
 			}
-
-			// If wallet !== mappedNetwork, show error to switch
-			// I think error handling breaks here as we need to make sure sync with inputs and parsed state are in sync
-
-			addressInput.value = getAddress(address)
-			idInput.value = BigInt(id)
-			if (idInputRef.current) idInputRef.current.value = id
-			event.currentTarget.value = address
 		}
 	}
 
@@ -116,7 +127,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 			</div>
 			{fetchingStates.value === 'empty' ? null : (
 				<div className="flex flex-row flex-wrap border border-white/50 p-4 h-max gap-4">
-					{fetchingStates.value === 'fetching' ?
+					{fetchingStates.value === 'fetching' && !openseaParseError.value ?
 						<>
 							<div className="flex flex-col gap-4 flex-1">
 								<div>
@@ -144,10 +155,10 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 							</div>
 						</>
 						: null}
+					{openseaParseError.value ? <p>{openseaParseError.value}</p> : null}
 					{fetchingStates.value === 'notfound' || fetchingStates.value === 'contract' ? <p>No NFT found at address</p> : null}
 					{fetchingStates.value === 'badid' ? <p>Found NFT collection, but token ID does not exist</p> : null}
 					{fetchingStates.value === 'noprovider' ? <p>Connect wallet to load token details.</p> : null}
-					{/* {fetchingStates.value === 'wrongnetwork' ? <p>Your wallet is not on the same network as the linked item, please switch networks</p> : null} */}
 					{fetchingStates.value === 'EOA' ? <p>Address provided is an EOA</p> : null}
 					{fetchingStates.value === 'ERC20' ? <p>Address provided is an ERC20 contract</p> : null}
 					{fetchingStates.value === 'ERC1155' ? <p>Address provided is an ERC1155 contract</p> : null}
