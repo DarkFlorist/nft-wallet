@@ -1,4 +1,4 @@
-import { batch, Signal, useComputed, useSignal, useSignalEffect } from "@preact/signals";
+import { batch, Signal, useComputed, useSignal, useSignalEffect } from '@preact/signals'
 import { getAddress } from "ethers";
 import { JSX } from "preact/jsx-runtime";
 import { connectBrowserProvider, ProviderStore } from "../library/provider.js";
@@ -8,8 +8,8 @@ import { Button } from "./Button.js";
 import { TokenPicker } from "./TokenPicker.js";
 import { transferNft } from "../library/transactions.js";
 import Blockie from "./Blockie.js";
-import { createRef } from "preact";
-import { knownNetworks } from "../library/networks.js";
+import { createRef } from 'preact'
+import { knownNetworks } from '../library/networks.js'
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const showTokenPicker = useSignal<boolean>(false)

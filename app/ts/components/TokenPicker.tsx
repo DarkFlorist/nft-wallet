@@ -1,6 +1,6 @@
 import { Signal, useSignal } from "@preact/signals";
-import { getAddress } from "ethers"
-import { JSX } from "preact/jsx-runtime";
+import { getAddress } from 'ethers'
+import { JSX } from 'preact/jsx-runtime'
 
 export const TokenPicker = ({ show }: { show: Signal<boolean>, nft: Signal<{ address: string, id: bigint, owner: string, name?: string, symbol?: string, tokenURI?: string } | undefined> }) => {
 	const results = useSignal<Array<{ name: string, id: bigint, contract: string }>>([])
