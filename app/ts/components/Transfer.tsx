@@ -32,30 +32,18 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 	})
 
 	function validateAddressInput(event: JSX.TargetedEvent<HTMLInputElement>) {
-		try {
-			addressInput.value = getAddress(event.currentTarget.value.toLowerCase())
-		} catch (e) {
-			console.error(e)
-			addressInput.value = undefined
-		}
+		const value = event.currentTarget.value.toLowerCase().trim()
+		addressInput.value = /^0x[a-f0-9]*$/.test(value) && value.length === 42 ? getAddress(value) : undefined
 	}
 
 	function validateRecipientInput(event: JSX.TargetedEvent<HTMLInputElement>) {
-		try {
-			recipientInput.value = getAddress(event.currentTarget.value.toLowerCase())
-		} catch (e) {
-			console.error(e)
-			recipientInput.value = undefined
-		}
+		const value = event.currentTarget.value.toLowerCase().trim()
+		recipientInput.value = /^0x[a-f0-9]*$/.test(value) && value.length === 42 ? getAddress(value) : undefined
 	}
 
 	function validateIdInput(event: JSX.TargetedEvent<HTMLInputElement>) {
-		try {
-			idInput.value = BigInt(event.currentTarget.value)
-		} catch (e) {
-			console.error(e)
-			idInput.value = undefined
-		}
+		const value = event.currentTarget.value.toLowerCase().trim()
+		idInput.value = /^\d+$/.test(value) ? BigInt(value) : undefined
 	}
 
 	async function attemptToFetchNft(address: string | undefined, id: bigint | undefined) {

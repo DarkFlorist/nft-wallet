@@ -94,9 +94,9 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 		}
 	]
 
-	try {
+	const [isERC721, hasMetadata, isERC1155, isERC1155Metadata, owner, name, symbol, decimals, totalSupply, tokenURI, erc1155Uri]: { success: boolean, returnData: BytesLike }[] = await multicall.tryAggregate.staticCall(false, calls)
 
-		const [isERC721, hasMetadata, isERC1155, isERC1155Metadata, owner, name, symbol, decimals, totalSupply, tokenURI, erc1155Uri]: { success: boolean, returnData: BytesLike }[] = await multicall.tryAggregate.staticCall(false, calls)
+	try {
 
 		if (isERC721.success && nftInterface.decodeFunctionResult('supportsInterface', isERC721.returnData)[0] === true) {
 			if (owner.success === false || nftInterface.decodeFunctionResult('ownerOf', owner.returnData)[0] === ZeroAddress) throw new Error('No ERC721 found at address')
