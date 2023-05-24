@@ -1,5 +1,5 @@
 import { Contract, Provider, Interface, ZeroAddress, BytesLike } from "ethers";
-import { ERC1155ABI, ERC20ABI, ERC721ABI, MulticallABI } from "./abi.js";
+import { ERC1155ABI, ERC20ABI, ERC721ABI, MulticallABI } from './abi.js'
 
 type EOA = {
 	type: 'EOA'

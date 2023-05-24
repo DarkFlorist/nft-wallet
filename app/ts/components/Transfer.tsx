@@ -1,19 +1,22 @@
-import { Signal, useComputed, useSignal, useSignalEffect } from "@preact/signals";
+import { batch, Signal, useComputed, useSignal, useSignalEffect } from '@preact/signals'
 import { getAddress } from "ethers";
 import { JSX } from "preact/jsx-runtime";
 import { connectBrowserProvider, ProviderStore } from "../library/provider.js";
-import { itentifyAddress } from "../library/identifyTokens.js"
+import { itentifyAddress } from '../library/identifyTokens.js'
 import { BlockInfo } from "../library/types.js";
 import { Button } from "./Button.js";
 import { TokenPicker } from "./TokenPicker.js";
 import { transferNft } from "../library/transactions.js";
 import Blockie from "./Blockie.js";
+import { createRef } from 'preact'
+import { knownNetworks } from '../library/networks.js'
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const showTokenPicker = useSignal<boolean>(false)
 	const selectedNft = useSignal<{ address: string, id: bigint, owner: string, name?: string, symbol?: string, tokenURI?: string } | undefined>(undefined)
 
-	const fetchingStates = useSignal<'empty' | 'fetching' | 'notfound' | 'badid' | 'noprovider' | 'EOA' | 'contract' | 'ERC20' | 'ERC1155'>('empty')
+	const fetchingStates = useSignal<'empty' | 'fetching' | 'notfound' | 'badid' | 'noprovider' | 'EOA' | 'contract' | 'ERC20' | 'ERC1155' | 'opensea'>('empty')
+	const openseaParseError = useSignal<string>('')
 	const sendText = useComputed(() => {
 		if (!selectedNft.value) return 'Input Token Details'
 		if (selectedNft.value.owner !== provider.value?.walletAddress) return 'You do not own this token'
@@ -25,6 +28,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 
 	const addressInput = useSignal<string | undefined>(undefined)
 	const idInput = useSignal<bigint | undefined>(undefined)
+	const idInputRef = createRef<HTMLInputElement>()
 	const recipientInput = useSignal<string | undefined>(undefined)
 
 	useSignalEffect(() => {
@@ -32,8 +36,36 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 	})
 
 	function validateAddressInput(event: JSX.TargetedEvent<HTMLInputElement>) {
-		const value = event.currentTarget.value.toLowerCase().trim()
-		addressInput.value = /^0x[a-f0-9]*$/.test(value) && value.length === 42 ? getAddress(value) : undefined
+		const openseaMatch = /^https?:\/\/opensea\.io\/assets\/([^\/]+)\/(0x[a-fA-F0-9]{40})\/(\d+)$/.exec(event.currentTarget.value)
+		if (openseaMatch === null) {
+			const value = event.currentTarget.value.toLowerCase().trim()
+			openseaParseError.value = ''
+			addressInput.value = /^0x[a-f0-9]*$/.test(value) && value.length === 42 ? getAddress(value) : undefined
+		} else {
+			// Parse OpenSea URL
+			const [_, network, address, id] = openseaMatch
+			const mappedNetwork = Object.keys(knownNetworks).reduce((match: string | undefined, chainId) => !match && knownNetworks[chainId].openseaSlug && knownNetworks[chainId].openseaSlug === network ? chainId : match, undefined)
+
+			if (!mappedNetwork) {
+				batch(() => {
+					fetchingStates.value = 'opensea'
+					openseaParseError.value = "NFT Sender doesn't recognize network from OpenSea"
+				})
+			} else if (BigInt(mappedNetwork) !== provider.value?.chainId) {
+				batch(() => {
+					fetchingStates.value = 'opensea'
+					openseaParseError.value = `The NFT on the provided URL is on ${knownNetworks[mappedNetwork].displayName}, please change your wallet's network to ${knownNetworks[mappedNetwork].displayName}`
+				})
+			} else {
+				batch(() => {
+					openseaParseError.value = ''
+					addressInput.value = getAddress(address)
+					idInput.value = BigInt(id)
+					if (idInputRef.current) idInputRef.current.value = id
+					event.currentTarget.value = address
+				})
+			}
+		}
 	}
 
 	function validateRecipientInput(event: JSX.TargetedEvent<HTMLInputElement>) {
@@ -64,8 +96,8 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 					fetchingStates.value = identifiedAddress.type
 				}
 			}
-		} catch (e: any) {
-			if ('message' in e) {
+		} catch (e) {
+			if (typeof e === 'object' && e !== null && 'message' in e) {
 				if (e.message === 'No ERC721 found at address') return fetchingStates.value = 'notfound'
 				if (e.message === 'Token ID does not exist') return fetchingStates.value = 'badid'
 			}
@@ -86,16 +118,16 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 			<div className="flex gap-4 flex-col sm:flex-row">
 				<div className="flex flex-col flex-grow border border-white/50 p-2 bg-black focus-within:bg-white/20">
 					<span className="text-sm text-white/50">Contract Address</span>
-					<input onInput={validateAddressInput} type="text" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="0x133...789" />
+					<input onInput={validateAddressInput} type="text" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="0x133...789 or OpenSea Item URL https://opensea.io/assets/..." />
 				</div>
 				<div className="flex flex-col border border-white/50 p-2 bg-black focus-within:bg-white/20">
 					<span className="text-sm text-white/50">Token ID</span>
-					<input onInput={validateIdInput} type="number" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="1" />
+					<input onInput={validateIdInput} ref={idInputRef} type="number" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="1" />
 				</div>
 			</div>
 			{fetchingStates.value === 'empty' ? null : (
 				<div className="flex flex-row flex-wrap border border-white/50 p-4 h-max gap-4">
-					{fetchingStates.value === 'fetching' ?
+					{fetchingStates.value === 'fetching' && !openseaParseError.value ?
 						<>
 							<div className="flex flex-col gap-4 flex-1">
 								<div>
@@ -123,6 +155,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 							</div>
 						</>
 						: null}
+					{openseaParseError.value ? <p>{openseaParseError.value}</p> : null}
 					{fetchingStates.value === 'notfound' || fetchingStates.value === 'contract' ? <p>No NFT found at address</p> : null}
 					{fetchingStates.value === 'badid' ? <p>Found NFT collection, but token ID does not exist</p> : null}
 					{fetchingStates.value === 'noprovider' ? <p>Connect wallet to load token details.</p> : null}

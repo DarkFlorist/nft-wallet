@@ -1,4 +1,5 @@
-import { Signal } from '@preact/signals'
+import { Signal, useComputed } from '@preact/signals'
+import { knownNetworks } from '../library/networks.js'
 import { connectBrowserProvider, ProviderStore } from '../library/provider.js'
 import { BlockInfo } from '../library/types.js'
 import Blockie from './Blockie.js'
@@ -11,6 +12,12 @@ export const Navbar = ({
 	blockInfo: Signal<BlockInfo>,
 	provider: Signal<ProviderStore | undefined>,
 }) => {
+	const displayNetwork = useComputed(() => {
+		if (!provider.value) return ''
+		const chainId = `0x${provider.value.chainId.toString(16)}`
+		return chainId in knownNetworks ? knownNetworks[chainId].displayName : `Network ${provider.value.chainId.toString(10)}`
+	})
+
 	return (
 		<div className='flex flex-col w-full sm:flex-row items-center justify-between gap-4 border-slate-400/30'>
 			<h1 className='text-xl'>NFT Sender</h1>
@@ -19,7 +26,7 @@ export const Navbar = ({
 					<>
 						<div className='flex flex-col items-end justify-around h-12'>
 							<p className='font-bold break-all'>{provider.value.walletAddress}</p>
-							<span className='text-gray-400 text-sm'>{provider.value.chainId === 1n ? 'Mainnet' : `Network ${provider.value.chainId.toString()}`}</span>
+							<span className='text-gray-400 text-sm'>{displayNetwork.value}</span>
 						</div >
 						<Blockie seed={provider.value.walletAddress.toLowerCase()} size={12} />
 					</>
