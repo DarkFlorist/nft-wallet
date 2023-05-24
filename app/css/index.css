@@ -551,6 +551,10 @@ video {
 	display: none;
 }
 
+.h-12 {
+	height: 3rem;
+}
+
 .h-4 {
 	height: 1rem;
 }
@@ -619,6 +623,10 @@ video {
 	flex-wrap: wrap;
 }
 
+.items-end {
+	align-items: flex-end;
+}
+
 .items-center {
 	align-items: center;
 }
@@ -629,6 +637,10 @@ video {
 
 .justify-between {
 	justify-content: space-between;
+}
+
+.justify-around {
+	justify-content: space-around;
 }
 
 .gap-2 {
