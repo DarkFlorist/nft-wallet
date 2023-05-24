@@ -17,7 +17,7 @@ export const Navbar = ({
 			<div className='flex gap-4 items-center'>
 				{provider.value ? (
 					<>
-						<div className='flex flex-col'>
+						<div className='flex flex-col items-end justify-around h-12'>
 							<p className='font-bold break-all'>{provider.value.walletAddress}</p>
 							<span className='text-gray-400 text-sm'>{provider.value.chainId === 1n ? 'Mainnet' : `Network ${provider.value.chainId.toString()}`}</span>
 						</div >
