@@ -92,8 +92,8 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 			if (nft.address === addressInput.value && nft.id === idInput.value) {
 				return selectedNft.value = nft
 			}
-		} catch (e: any) {
-			if ('message' in e) {
+		} catch (e) {
+			if (typeof e === 'object' && e !== null && 'message' in e) {
 				if (e.message === 'No ERC721 found at address') return fetchingStates.value = 'notfound'
 				if (e.message === 'Token ID does not exist') return fetchingStates.value = 'badid'
 			}
