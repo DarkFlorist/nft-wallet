@@ -2,7 +2,7 @@ import { batch, Signal, useComputed, useSignal, useSignalEffect } from '@preact/
 import { getAddress } from "ethers";
 import { JSX } from "preact/jsx-runtime";
 import { connectBrowserProvider, ProviderStore } from "../library/provider.js";
-import { itentifyAddress } from "../library/identifyTokens.js"
+import { itentifyAddress } from '../library/identifyTokens.js'
 import { BlockInfo } from "../library/types.js";
 import { Button } from "./Button.js";
 import { TokenPicker } from "./TokenPicker.js";
