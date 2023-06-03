@@ -26,7 +26,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		return 'Send'
 	})
 
-	const idInput = useSignal<number | undefined>(undefined)
+	const idInput = useSignal<string | undefined>(undefined)
 	const showWarn = useSignal<{ id: boolean, recipient: boolean, contract: boolean }>({ id: false, recipient: false, contract: false })
 
 	const contractAddress = useSignal<string | undefined>(undefined)
@@ -68,7 +68,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 					openseaParseError.value = ''
 					contractAddress.value = getAddress(address)
 					itemId.value = BigInt(id)
-					idInput.value = Number(id)
+					idInput.value = id
 					event.currentTarget.value = address
 				})
 			}
@@ -87,7 +87,8 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		const value = event.currentTarget.value.toLowerCase().trim()
 		batch(() => {
 			itemId.value = /^\d+$/.test(value) ? BigInt(value) : undefined
-			showWarn.value = { ...showWarn.peek(), id: itemId.value === undefined && value === '' }
+			console.log(event.currentTarget.value)
+			showWarn.value = { ...showWarn.peek(), id: itemId.value === undefined && idInput.value !== undefined }
 		})
 	}
 
