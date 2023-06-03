@@ -1,15 +1,15 @@
 import { batch, Signal, useComputed, useSignal, useSignalEffect } from '@preact/signals'
-import { getAddress } from "ethers";
-import { JSX } from "preact/jsx-runtime";
-import { connectBrowserProvider, ProviderStore } from "../library/provider.js";
+import { getAddress } from 'ethers';
+import { JSX } from 'preact/jsx-runtime';
+import { connectBrowserProvider, ProviderStore } from '../library/provider.js';
 import { itentifyAddress } from '../library/identifyTokens.js'
-import { BlockInfo } from "../library/types.js";
-import { Button } from "./Button.js";
-import { TokenPicker } from "./TokenPicker.js";
-import { transferNft } from "../library/transactions.js";
-import Blockie from "./Blockie.js";
-import { createRef } from 'preact'
+import { BlockInfo } from '../library/types.js';
+import { Button } from './Button.js';
+import { TokenPicker } from './TokenPicker.js';
+import { transferNft } from '../library/transactions.js';
+import Blockie from './Blockie.js';
 import { knownNetworks } from '../library/networks.js'
+import { NumberInput, TextInput } from './Inputs.js';
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const showTokenPicker = useSignal<boolean>(false)
@@ -20,27 +20,34 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 	const sendText = useComputed(() => {
 		if (!selectedNft.value) return 'Input Token Details'
 		if (selectedNft.value.owner !== provider.value?.walletAddress) return 'You do not own this token'
-		if (!recipientInput.value) return 'Missing Recipient'
-		if (recipientInput.value === provider.value.walletAddress) return 'Cannot send to yourself'
-		if (recipientInput.value === selectedNft.value.address) return 'Cannot send to NFT contract'
+		if (!recipient.value) return 'Missing Recipient'
+		if (recipient.value === provider.value.walletAddress) return 'Cannot send to yourself'
+		if (recipient.value === selectedNft.value.address) return 'Cannot send to NFT contract'
 		return 'Send'
 	})
 
-	const addressInput = useSignal<string | undefined>(undefined)
-	const idInput = useSignal<bigint | undefined>(undefined)
-	const idInputRef = createRef<HTMLInputElement>()
-	const recipientInput = useSignal<string | undefined>(undefined)
+	const idInput = useSignal<number | undefined>(undefined)
+	const showWarn = useSignal<{ id: boolean, recipient: boolean, contract: boolean }>({ id: false, recipient: false, contract: false })
+
+	const contractAddress = useSignal<string | undefined>(undefined)
+	const itemId = useSignal<bigint | undefined>(undefined)
+	const recipient = useSignal<string | undefined>(undefined)
 
 	useSignalEffect(() => {
-		attemptToFetchNft(addressInput.value, idInput.value)
+		if (provider.value) {
+			attemptToFetchNft(contractAddress.value, itemId.value)
+		}
 	})
 
 	function validateAddressInput(event: JSX.TargetedEvent<HTMLInputElement>) {
 		const openseaMatch = /^https?:\/\/opensea\.io\/assets\/([^\/]+)\/(0x[a-fA-F0-9]{40})\/(\d+)$/.exec(event.currentTarget.value)
 		if (openseaMatch === null) {
 			const value = event.currentTarget.value.toLowerCase().trim()
-			openseaParseError.value = ''
-			addressInput.value = /^0x[a-f0-9]*$/.test(value) && value.length === 42 ? getAddress(value) : undefined
+			batch(() => {
+				openseaParseError.value = ''
+				contractAddress.value = /^0x[a-f0-9]*$/.test(value) && value.length === 42 ? getAddress(value) : undefined
+				showWarn.value = { ...showWarn.peek(), contract: contractAddress.value === undefined && Boolean(value) }
+			})
 		} else {
 			// Parse OpenSea URL
 			const [_, network, address, id] = openseaMatch
@@ -49,7 +56,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 			if (!mappedNetwork) {
 				batch(() => {
 					fetchingStates.value = 'opensea'
-					openseaParseError.value = "NFT Sender doesn't recognize network from OpenSea"
+					openseaParseError.value = 'NFT Sender doesn\'t recognize network from OpenSea'
 				})
 			} else if (BigInt(mappedNetwork) !== provider.value?.chainId) {
 				batch(() => {
@@ -59,9 +66,9 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 			} else {
 				batch(() => {
 					openseaParseError.value = ''
-					addressInput.value = getAddress(address)
-					idInput.value = BigInt(id)
-					if (idInputRef.current) idInputRef.current.value = id
+					contractAddress.value = getAddress(address)
+					itemId.value = BigInt(id)
+					idInput.value = Number(id)
 					event.currentTarget.value = address
 				})
 			}
@@ -70,12 +77,18 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 
 	function validateRecipientInput(event: JSX.TargetedEvent<HTMLInputElement>) {
 		const value = event.currentTarget.value.toLowerCase().trim()
-		recipientInput.value = /^0x[a-f0-9]*$/.test(value) && value.length === 42 ? getAddress(value) : undefined
+		batch(() => {
+			recipient.value = /^0x[a-f0-9]*$/.test(value) && value.length === 42 ? getAddress(value) : undefined
+			showWarn.value = { ...showWarn.peek(), recipient: recipient.value === undefined && Boolean(value) }
+		})
 	}
 
 	function validateIdInput(event: JSX.TargetedEvent<HTMLInputElement>) {
 		const value = event.currentTarget.value.toLowerCase().trim()
-		idInput.value = /^\d+$/.test(value) ? BigInt(value) : undefined
+		batch(() => {
+			itemId.value = /^\d+$/.test(value) ? BigInt(value) : undefined
+			showWarn.value = { ...showWarn.peek(), id: itemId.value === undefined && value === '' }
+		})
 	}
 
 	async function attemptToFetchNft(address: string | undefined, id: bigint | undefined) {
@@ -89,7 +102,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		fetchingStates.value = 'fetching'
 		try {
 			const identifiedAddress = await itentifyAddress(address, id, provider.value?.provider)
-			if (identifiedAddress.address === addressInput.value && identifiedAddress.inputId === idInput.value) {
+			if (identifiedAddress.address === contractAddress.value && identifiedAddress.inputId === itemId.value) {
 				if (identifiedAddress.type === 'ERC721') {
 					selectedNft.value = identifiedAddress
 				} else {
@@ -106,51 +119,45 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 	}
 
 	function sendTransfer() {
-		if (selectedNft.value && recipientInput.value && provider.value) {
-			transferNft(selectedNft.value, recipientInput.value, provider.value.provider)
+		if (selectedNft.value && recipient.value && provider.value) {
+			transferNft(selectedNft.value, recipient.value, provider.value.provider)
 		}
 	}
 
 	return (
-		<div className="flex flex-col gap-4 w-full max-w-screen-xl">
+		<div className='flex flex-col gap-4 w-full max-w-screen-xl'>
 			<TokenPicker show={showTokenPicker} nft={selectedNft} />
-			<h2 className="text-2xl font-semibold">Transfer NFTs</h2>
-			<div className="flex gap-4 flex-col sm:flex-row">
-				<div className="flex flex-col flex-grow border border-white/50 p-2 bg-black focus-within:bg-white/20">
-					<span className="text-sm text-white/50">Contract Address</span>
-					<input onInput={validateAddressInput} type="text" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="0x133...789 or OpenSea Item URL https://opensea.io/assets/..." />
-				</div>
-				<div className="flex flex-col border border-white/50 p-2 bg-black focus-within:bg-white/20">
-					<span className="text-sm text-white/50">Token ID</span>
-					<input onInput={validateIdInput} ref={idInputRef} type="number" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="1" />
-				</div>
+			<h2 className='text-3xl font-semibold'>Transfer NFTs</h2>
+			<div className='flex gap-4 flex-col sm:flex-row'>
+				<TextInput warn={showWarn.value.contract} onInput={validateAddressInput} size='w-full' label='Contract Address' placeholder='0x133...789 or OpenSea Item URL https://opensea.io/assets/...' />
+				<NumberInput warn={showWarn.value.id} label='Token ID' placeholder='1' input={idInput} onInput={validateIdInput} />
 			</div>
 			{fetchingStates.value === 'empty' ? null : (
-				<div className="flex flex-row flex-wrap border border-white/50 p-4 h-max gap-4">
+				<div className='flex flex-row flex-wrap border border-white/50 p-4 h-max gap-4'>
 					{fetchingStates.value === 'fetching' && !openseaParseError.value ?
 						<>
-							<div className="flex flex-col gap-4 flex-1">
+							<div className='flex flex-col gap-4 flex-1 w-full max-w-xl'>
 								<div>
-									<span className="text-sm text-white/50">Collection Name</span>
-									{selectedNft.value ? <p>{selectedNft.value.name}</p> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+									<span className='text-sm text-white/50'>Collection Name</span>
+									{selectedNft.value ? <p className='truncate w-full'>{selectedNft.value.name}</p> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>}
 								</div>
 								<div>
-									<span className="text-sm text-white/50">Token ID</span>
-									{selectedNft.value ? <p>{selectedNft.value.id}</p> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+									<span className='text-sm text-white/50'>Token ID</span>
+									{selectedNft.value ? <p className='truncate w-full'>{selectedNft.value.id}</p> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>}
 								</div>
-								<div>
-									<span className="text-sm text-white/50">Token Metadata</span>
-									{selectedNft.value ? <a className="text-ellipsis overflow-hidden block hover:underline" target="_blank" href={selectedNft.value.tokenURI}>{selectedNft.value.tokenURI}</a> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+								<div className='w-full'>
+									<span className='text-sm text-white/50'>Token Metadata</span>
+									{selectedNft.value ? <a className='truncate w-full block hover:underline' target='_blank' href={selectedNft.value.tokenURI}>{selectedNft.value.tokenURI}</a> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>}
 								</div>
 							</div>
-							<div className="flex flex-col gap-4 flex-1">
+							<div className='flex flex-col gap-4 flex-1 w-full max-w-xl'>
 								<div>
-									<span className="text-sm text-white/50">Contract Address</span>
-									{selectedNft.value ? <span className="overflow-hidden truncate w-full flex items-center gap-2"><Blockie seed={selectedNft.value.address.toLowerCase()} size={4} />{selectedNft.value.address}</span> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+									<span className='text-sm text-white/50'>Contract Address</span>
+									{selectedNft.value ? <span className='truncate w-full flex items-center gap-2'><Blockie seed={selectedNft.value.address.toLowerCase()} size={4} />{selectedNft.value.address}</span> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>}
 								</div>
 								<div>
-									<span className="text-sm text-white/50">Owner</span>
-									{selectedNft.value ? <span className="flex items-center gap-2"><Blockie seed={selectedNft.value.owner.toLowerCase()} size={4} />{selectedNft.value.owner}</span> : <p className="w-18 h-4 rounded bg-white/20 animate-pulse"></p>}
+									<span className='text-sm text-white/50'>Owner</span>
+									{selectedNft.value ? <span className='truncate w-full flex items-center gap-2'><Blockie seed={selectedNft.value.owner.toLowerCase()} size={4} />{selectedNft.value.owner}</span> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>}
 								</div>
 							</div>
 						</>
@@ -163,13 +170,10 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 					{fetchingStates.value === 'ERC20' ? <p>Address provided is an ERC20 contract</p> : null}
 					{fetchingStates.value === 'ERC1155' ? <p>Address provided is an ERC1155 contract</p> : null}
 				</div>)}
-			<div className="flex flex-col border border-white/50 p-2 focus-within:bg-white/20">
-				<span className="text-sm text-white/50">Recipient Address</span>
-				<input onInput={validateRecipientInput} type="text" className="bg-transparent outline-none placeholder:text-gray-600" placeholder="0x133...789" />
-			</div>
+			<TextInput onInput={validateRecipientInput} label='Recipient Address' warn={showWarn.value.recipient} placeholder='0x133...789' />
 			{provider.value
-				? <Button variant="full" disabled={sendText.value !== 'Send'} onClick={sendTransfer}>{sendText.value}</Button>
-				: <Button variant="full" onClick={() => connectBrowserProvider(provider, blockInfo)}>Connect Wallet</Button>
+				? <Button variant='full' disabled={sendText.value !== 'Send'} onClick={sendTransfer}>{sendText.value}</Button>
+				: <Button variant='full' onClick={() => connectBrowserProvider(provider, blockInfo)}>Connect Wallet</Button>
 			}
 		</div>
 	)
