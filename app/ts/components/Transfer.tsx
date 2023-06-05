@@ -22,7 +22,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		if (selectedNft.value.owner !== provider.value?.walletAddress) return 'You do not own this token'
 		if (!recipient.value) return 'Missing Recipient'
 		if (recipient.value === provider.value.walletAddress) return 'Cannot send to yourself'
-		if (recipient.value === selectedNft.value.address) return 'Cannot send to NFT contract'
+		if (recipient.value === selectedNft.value.address) return 'Cannot send to the NFT contract'
 		return 'Send'
 	})
 
