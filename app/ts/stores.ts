@@ -1,6 +1,6 @@
-import { useSignal } from "@preact/signals"
-import { ProviderStore } from "./library/provider.js"
-import { BlockInfo } from "./library/types.js"
+import { useSignal } from '@preact/signals'
+import { ProviderStore } from './library/provider.js'
+import { BlockInfo } from './library/types.js'
 
 
 export function createGlobalState() {
