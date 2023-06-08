@@ -9,7 +9,7 @@ import { TokenPicker } from './TokenPicker.js';
 import { transferNft } from '../library/transactions.js';
 import Blockie from './Blockie.js';
 import { knownNetworks } from '../library/networks.js'
-import { NumberInput, TextInput } from './Inputs.js';
+import { BlockieTextInput, NumberInput, TextInput } from './Inputs.js';
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const showTokenPicker = useSignal<boolean>(false)
@@ -26,7 +26,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		return 'Send'
 	})
 
-	const idInput = useSignal<string | undefined>(undefined)
+	const idInput = useSignal<number | undefined>(undefined)
 	const showWarn = useSignal<{ id: boolean, recipient: boolean, contract: boolean }>({ id: false, recipient: false, contract: false })
 
 	const contractAddress = useSignal<string | undefined>(undefined)
@@ -68,7 +68,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 					openseaParseError.value = ''
 					contractAddress.value = getAddress(address)
 					itemId.value = BigInt(id)
-					idInput.value = id
+					idInput.value = Number(id)
 					event.currentTarget.value = address
 				})
 			}
@@ -171,7 +171,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 					{fetchingStates.value === 'ERC20' ? <p>Address provided is an ERC20 contract</p> : null}
 					{fetchingStates.value === 'ERC1155' ? <p>Address provided is an ERC1155 contract</p> : null}
 				</div>)}
-			<TextInput onInput={validateRecipientInput} label='Recipient Address' warn={showWarn.value.recipient} placeholder='0x133...789' />
+			<BlockieTextInput onInput={validateRecipientInput} label='Recipient Address' warn={showWarn.value.recipient} placeholder='0x133...789' />
 			{provider.value
 				? <Button variant='full' disabled={sendText.value !== 'Send'} onClick={sendTransfer}>{sendText.value}</Button>
 				: <Button variant='full' onClick={() => connectBrowserProvider(provider, blockInfo)}>Connect Wallet</Button>
