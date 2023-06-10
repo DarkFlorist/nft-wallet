@@ -8,7 +8,7 @@ import { Button } from './Button.js';
 import { transferERC721 } from '../library/transactions.js';
 import Blockie from './Blockie.js';
 import { knownNetworks } from '../library/networks.js'
-import { NumberInput, TextInput } from './Inputs.js';
+import { BlockieTextInput, NumberInput, TextInput } from './Inputs.js';
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	// const showTokenPicker = useSignal<boolean>(false)
@@ -200,7 +200,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 					{fetchingStates.value === 'ERC20' ? <p>Address provided is an ERC20 contract</p> : null}
 					{fetchingStates.value === 'ERC1155' ? <p>Address provided is an ERC1155 contract</p> : null}
 				</div>)}
-			<TextInput onInput={validateRecipientInput} label='Recipient Address' warn={showWarn.value.recipient} placeholder='0x133...789' />
+			<BlockieTextInput onInput={validateRecipientInput} label='Recipient Address' warn={showWarn.value.recipient} placeholder='0x133...789' />
 			{provider.value
 				? <Button variant='full' disabled={sendText.value !== 'Send'} onClick={sendTransfer}>{sendText.value}</Button>
 				: <Button variant='full' onClick={() => connectBrowserProvider(provider, blockInfo)}>Connect Wallet</Button>
