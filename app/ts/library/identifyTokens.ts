@@ -20,7 +20,7 @@ type ERC20 = {
 	totalSupply: bigint
 }
 
-type ERC721 = {
+export type ERC721 = {
 	type: 'ERC721'
 	address: string
 	owner: string
@@ -30,10 +30,11 @@ type ERC721 = {
 	tokenURI?: string
 }
 
-type ERC1155 = {
+export type ERC1155 = {
 	type: 'ERC1155'
 	address: string
 	uri?: string
+	balance: bigint
 }
 
 export type IdentifiedAddress = (EOA | ERC20 | ERC721 | ERC1155 | UnknownContract) & { inputId: bigint }
@@ -112,10 +113,13 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 		}
 
 		if (isERC1155.success && nftInterface.decodeFunctionResult('supportsInterface', isERC1155.returnData)[0] === true) {
+			const tokenContract = new Contract(address, ERC1155ABI, provider)
+			const balance = await tokenContract.balanceOf(address, id)
 			return {
 				type: 'ERC1155',
 				inputId: id,
 				address,
+				balance,
 				uri: isERC1155Metadata.success && nftInterface.decodeFunctionResult('supportsInterface', isERC1155Metadata.returnData)[0] === true && erc1155Uri.success ? erc1155Interface.decodeFunctionResult('uri', erc1155Uri.returnData)[0] : undefined,
 			}
 		}
