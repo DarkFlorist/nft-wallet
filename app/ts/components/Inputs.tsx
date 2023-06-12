@@ -30,3 +30,20 @@ export const BlockieTextInput = ({ label, placeholder, onInput, size, warn, inpu
 		</div >
 	)
 }
+
+export const TokenAmountInput = ({ label, placeholder, onInput, size, warn, input, balance }: { label: string, balance: bigint, placeholder: string, warn?: boolean, size?: 'w-full' | 'w-max' | string, input?: Signal<string | undefined>, onInput?: JSX.GenericEventHandler<HTMLInputElement> }) => {
+	const inputRef = useRef<HTMLInputElement>(null)
+
+	return (
+		<div className={`${size ?? ''} flex flex-wrap justify-center border ${warn ? 'border-red-400' : 'border-white/50 focus-within:border-white/80'} bg-transparent outline-none focus-within:bg-white/5 px-4 bg-transparent`} >
+			<div className='flex flex-col h-16 flex-grow justify-center'>
+				<span className='text-sm text-white/50'>{label}</span>
+				<input ref={inputRef}  {...{ placeholder, onInput, ...(input ? { value: input.value } : {}) }} type='number' className='h-6 bg-transparent outline-none placeholder:text-white/20' />
+			</div>
+			<div className='flex gap-2 items-center h-16'>
+				<span className='text-sm text-white/70'>Balance: {balance}</span>
+				<button className='p-2 outline-none border border-white/50 focus:border-white text-xs text-white/50 focus:text-white hover:text-white hover:border-white disabled:opacity-50' onClick={() => { if (inputRef.current) { inputRef.current.value = String(balance) } }}>Max</button>
+			</div>
+		</div>
+	)
+}

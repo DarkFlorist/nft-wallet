@@ -843,6 +843,11 @@ video {
 	line-height: 1.75rem;
 }
 
+.text-xs {
+	font-size: 0.75rem;
+	line-height: 1rem;
+}
+
 .font-bold {
 	font-weight: 700;
 }
@@ -872,6 +877,10 @@ video {
 
 .text-white\/50 {
 	color: rgb(255 255 255 / 0.5);
+}
+
+.text-white\/70 {
+	color: rgb(255 255 255 / 0.7);
 }
 
 .outline-none {
@@ -905,8 +914,23 @@ video {
 	background-color: rgb(255 255 255 / 0.05);
 }
 
+.hover\:border-white:hover {
+	--tw-border-opacity: 1;
+	border-color: rgb(255 255 255 / var(--tw-border-opacity));
+}
+
+.hover\:text-white:hover {
+	--tw-text-opacity: 1;
+	color: rgb(255 255 255 / var(--tw-text-opacity));
+}
+
 .hover\:underline:hover {
 	text-decoration-line: underline;
+}
+
+.focus\:border-white:focus {
+	--tw-border-opacity: 1;
+	border-color: rgb(255 255 255 / var(--tw-border-opacity));
 }
 
 .focus\:border-white\/90:focus {
@@ -915,6 +939,11 @@ video {
 
 .focus\:bg-white\/20:focus {
 	background-color: rgb(255 255 255 / 0.2);
+}
+
+.focus\:text-white:focus {
+	--tw-text-opacity: 1;
+	color: rgb(255 255 255 / var(--tw-text-opacity));
 }
 
 .disabled\:opacity-50:disabled {

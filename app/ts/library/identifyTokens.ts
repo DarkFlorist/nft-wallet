@@ -33,13 +33,14 @@ export type ERC721 = {
 export type ERC1155 = {
 	type: 'ERC1155'
 	address: string
-	uri?: string
+	tokenURI?: string
 	balance: bigint
+	id: bigint
 }
 
 export type IdentifiedAddress = (EOA | ERC20 | ERC721 | ERC1155 | UnknownContract) & { inputId: bigint }
 
-export async function itentifyAddress(address: string, id: bigint, provider: Provider): Promise<IdentifiedAddress> {
+export async function itentifyAddress(address: string, id: bigint, provider: Provider, user: string): Promise<IdentifiedAddress> {
 	const contractCode = await provider.getCode(address)
 	if (contractCode === '0x') return { type: 'EOA', address, inputId: id }
 
@@ -59,12 +60,12 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 		},
 		{
 			target: address,
-			callData: nftInterface.encodeFunctionData('supportsInterface', ['0xd9b67a26']) // Is ERC721Metadata
+			callData: nftInterface.encodeFunctionData('supportsInterface', ['0xd9b67a26']) // Is ERC1155
 		},
-		{
-			target: address,
-			callData: nftInterface.encodeFunctionData('supportsInterface', ['0x0e89341c']) // Is ERC721Metadata
-		},
+		// {
+		// 	target: address,
+		// 	callData: nftInterface.encodeFunctionData('supportsInterface', ['0x0e89341c']) // Is ERC1155Metadata
+		// },
 		{
 			target: address,
 			callData: nftInterface.encodeFunctionData('ownerOf', [id])
@@ -95,7 +96,7 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 		}
 	]
 
-	const [isERC721, hasMetadata, isERC1155, isERC1155Metadata, owner, name, symbol, decimals, totalSupply, tokenURI, erc1155Uri]: { success: boolean, returnData: BytesLike }[] = await multicall.tryAggregate.staticCall(false, calls)
+	const [isERC721, hasMetadata, isERC1155, owner, name, symbol, decimals, totalSupply, tokenURI, erc1155Uri]: { success: boolean, returnData: BytesLike }[] = await multicall.tryAggregate.staticCall(false, calls)
 
 	try {
 
@@ -114,13 +115,16 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 
 		if (isERC1155.success && nftInterface.decodeFunctionResult('supportsInterface', isERC1155.returnData)[0] === true) {
 			const tokenContract = new Contract(address, ERC1155ABI, provider)
-			const balance = await tokenContract.balanceOf(address, id)
+			const balance = await tokenContract.balanceOf(user, id)
+			console.log({ tokenContract, address, id })
+			const uri: string | undefined = erc1155Uri.success ? erc1155Interface.decodeFunctionResult('uri', erc1155Uri.returnData)[0] : undefined
 			return {
 				type: 'ERC1155',
 				inputId: id,
+				id,
 				address,
 				balance,
-				uri: isERC1155Metadata.success && nftInterface.decodeFunctionResult('supportsInterface', isERC1155Metadata.returnData)[0] === true && erc1155Uri.success ? erc1155Interface.decodeFunctionResult('uri', erc1155Uri.returnData)[0] : undefined,
+				tokenURI: uri ? uri.replaceAll(`{id}`, id.toString(10)) : undefined,
 			}
 		}
 

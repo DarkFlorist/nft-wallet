@@ -5,16 +5,17 @@ import { connectBrowserProvider, ProviderStore } from '../library/provider.js';
 import { itentifyAddress, ERC721, ERC1155 } from '../library/identifyTokens.js'
 import { BlockInfo } from '../library/types.js';
 import { Button } from './Button.js';
-import { transferERC721 } from '../library/transactions.js';
-import Blockie from './Blockie.js';
+import { transferERC1155, transferERC721 } from '../library/transactions.js';
+
 import { knownNetworks } from '../library/networks.js'
-import { BlockieTextInput, NumberInput, TextInput } from './Inputs.js';
+import { BlockieTextInput, NumberInput, TextInput, TokenAmountInput } from './Inputs.js';
+import { ItemDetails } from './ItemDetails.js';
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	// const showTokenPicker = useSignal<boolean>(false)
 	const selectedNft = useSignal<ERC721 | ERC1155 | undefined>(undefined)
 
-	const fetchingStates = useSignal<'empty' | 'fetching' | 'notfound' | 'badid' | 'noprovider' | 'EOA' | 'contract' | 'ERC20' | 'ERC1155' | 'opensea'>('empty')
+	const fetchingStates = useSignal<'empty' | 'fetching' | 'notfound' | 'badid' | 'noprovider' | 'EOA' | 'contract' | 'ERC20' | 'opensea'>('empty')
 	const openseaParseError = useSignal<string>('')
 	const sendText = useComputed(() => {
 		if (!selectedNft.value) return 'Input Token Details'
@@ -25,8 +26,19 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		return 'Send'
 	})
 
+	const errorMessages: { [error: string]: string } = {
+		notfound: 'No NFT found at address',
+		contract: 'No NFT found at address',
+		badid: 'Found NFT collection, but token ID does not exist',
+		noprovider: 'Connect wallet to load token details.',
+		EOA: 'Address provided is an EOA',
+		ERC20: 'Address provided is an ERC20 contract',
+	}
+
 	const idInput = useSignal<string | undefined>(undefined)
-	const showWarn = useSignal<{ id: boolean, recipient: boolean, contract: boolean }>({ id: false, recipient: false, contract: false })
+	const transferAmount = useSignal<bigint | undefined>(undefined)
+	const transferAmountInput = useSignal<string | undefined>(undefined)
+	const showWarn = useSignal<{ id: boolean, recipient: boolean, contract: boolean, amount: boolean }>({ id: false, recipient: false, contract: false, amount: false })
 
 	const contractAddress = useSignal<string | undefined>(undefined)
 	const itemId = useSignal<bigint | undefined>(undefined)
@@ -86,8 +98,20 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		const value = event.currentTarget.value.toLowerCase().trim()
 		batch(() => {
 			itemId.value = /^\d+$/.test(value) ? BigInt(value) : undefined
-			console.log(event.currentTarget.value)
 			showWarn.value = { ...showWarn.peek(), id: itemId.value === undefined && idInput.value !== undefined }
+		})
+	}
+
+	function validateAmountInput(event: JSX.TargetedEvent<HTMLInputElement>) {
+		const value = event.currentTarget.value.toLowerCase().trim()
+		let amount = /^\d+$/.test(value) ? BigInt(value) : undefined
+		if (amount && amount < 0n) {
+			amount = undefined
+			event.currentTarget.value = ''
+		}
+		batch(() => {
+			transferAmount.value = amount
+			showWarn.value = { ...showWarn.peek(), amount: (transferAmount === undefined && transferAmountInput.value !== undefined) }
 		})
 	}
 
@@ -101,7 +125,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		}
 		fetchingStates.value = 'fetching'
 		try {
-			const identifiedAddress = await itentifyAddress(address, id, provider.value?.provider)
+			const identifiedAddress = await itentifyAddress(address, id, provider.value?.provider, provider.value?.walletAddress)
 			if (identifiedAddress.address === contractAddress.value && identifiedAddress.inputId === itemId.value) {
 				if (identifiedAddress.type === 'ERC721') {
 					selectedNft.value = identifiedAddress
@@ -121,10 +145,8 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 	}
 
 	function sendTransfer() {
-		if (selectedNft.value && recipient.value && provider.value) {
-			if ('owner' in selectedNft.value) transferERC721(selectedNft.value, recipient.value, provider.value.provider)
-			// if ('balance' in selectedNft.value) transferERC1155(selectedNft.value, recipient.value, provider.value.provider)
-		}
+		if (selectedNft.value && recipient.value && provider.value && selectedNft.value.type === 'ERC721') transferERC721(selectedNft.value, recipient.value, provider.value.provider)
+		if (selectedNft.value && recipient.value && provider.value && transferAmount.value && selectedNft.value.type === 'ERC1155') transferERC1155(selectedNft.value, provider.value.walletAddress, recipient.value, transferAmount.value, provider.value.provider)
 	}
 
 	return (
@@ -135,70 +157,16 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 				<TextInput warn={showWarn.value.contract} onInput={validateAddressInput} size='w-full' label='Contract Address' placeholder='0x133...789 or OpenSea Item URL https://opensea.io/assets/...' />
 				<NumberInput warn={showWarn.value.id} label='Token ID' placeholder='1' input={idInput} onInput={validateIdInput} />
 			</div>
-			<div className='flex gap-4 flex-col sm:flex-row'>
-				<NumberInput warn={showWarn.value.id} label='Amount    Balance: 000' placeholder='1' />
-			</div>
+			{selectedNft.value?.type === 'ERC1155' ?
+				<div className='flex gap-4 flex-col sm:flex-row'>
+					<TokenAmountInput balance={selectedNft.value.balance} onInput={validateAmountInput} input={transferAmountInput} warn={showWarn.value.amount} label='Transfer Amount' size='w-full' placeholder='1' />
+				</div>
+				: null}
 			{fetchingStates.value === 'empty' ? null : (
 				<div className='flex flex-row flex-wrap border border-white/50 p-4 h-max gap-4'>
-					{fetchingStates.value === 'fetching' && !openseaParseError.value ?
-						selectedNft.value && 'balance' in selectedNft.value ?
-							<>
-								<div className='flex flex-col gap-4 flex-1 w-full max-w-xl'>
-									<div>
-										<span className='text-sm text-white/50'>Collection Name</span>
-										{/* {selectedNft.value ? <p className='truncate w-full'>{selectedNft.value.name}</p> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>} */}
-									</div>
-									<div>
-										<span className='text-sm text-white/50'>Your Balance</span>
-										{selectedNft.value ? <p className='truncate w-full'>{selectedNft.value.balance}</p> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>}
-									</div>
-									<div className='w-full'>
-										<span className='text-sm text-white/50'>Token Metadata</span>
-										{selectedNft.value.uri ? <a className='truncate w-full block hover:underline' target='_blank' href={selectedNft.value.uri}>{selectedNft.value.uri}</a> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>}
-									</div>
-								</div>
-								<div className='flex flex-col gap-4 flex-1 w-full max-w-xl'>
-									<div>
-										<span className='text-sm text-white/50'>Contract Address</span>
-										{selectedNft.value ? <span className='truncate w-full flex items-center gap-2'><Blockie seed={selectedNft.value.address.toLowerCase()} size={4} />{selectedNft.value.address}</span> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>}
-									</div>
-								</div>
-							</>
-							:
-							<>
-								<div className='flex flex-col gap-4 flex-1 w-full max-w-xl'>
-									<div>
-										<span className='text-sm text-white/50'>Collection Name</span>
-										{selectedNft.value ? <p className='truncate w-full'>{selectedNft.value.name}</p> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>}
-									</div>
-									<div>
-										<span className='text-sm text-white/50'>Token ID</span>
-										{selectedNft.value ? <p className='truncate w-full'>{selectedNft.value.id}</p> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>}
-									</div>
-									<div className='w-full'>
-										<span className='text-sm text-white/50'>Token Metadata</span>
-										{selectedNft.value ? <a className='truncate w-full block hover:underline' target='_blank' href={selectedNft.value.tokenURI}>{selectedNft.value.tokenURI}</a> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>}
-									</div>
-								</div>
-								<div className='flex flex-col gap-4 flex-1 w-full max-w-xl'>
-									<div>
-										<span className='text-sm text-white/50'>Contract Address</span>
-										{selectedNft.value ? <span className='truncate w-full flex items-center gap-2'><Blockie seed={selectedNft.value.address.toLowerCase()} size={4} />{selectedNft.value.address}</span> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>}
-									</div>
-									<div>
-										<span className='text-sm text-white/50'>Owner</span>
-										{selectedNft.value ? <span className='truncate w-full flex items-center gap-2'><Blockie seed={selectedNft.value.owner.toLowerCase()} size={4} />{selectedNft.value.owner}</span> : <p className='w-18 h-4 rounded bg-white/20 animate-pulse'></p>}
-									</div>
-								</div>
-							</>
-						: null}
+					{fetchingStates.value === 'fetching' && !openseaParseError.value ? <ItemDetails item={selectedNft} /> : null}
 					{openseaParseError.value ? <p>{openseaParseError.value}</p> : null}
-					{fetchingStates.value === 'notfound' || fetchingStates.value === 'contract' ? <p>No NFT found at address</p> : null}
-					{fetchingStates.value === 'badid' ? <p>Found NFT collection, but token ID does not exist</p> : null}
-					{fetchingStates.value === 'noprovider' ? <p>Connect wallet to load token details.</p> : null}
-					{fetchingStates.value === 'EOA' ? <p>Address provided is an EOA</p> : null}
-					{fetchingStates.value === 'ERC20' ? <p>Address provided is an ERC20 contract</p> : null}
-					{fetchingStates.value === 'ERC1155' ? <p>Address provided is an ERC1155 contract</p> : null}
+					{fetchingStates.value in errorMessages ? <p>{errorMessages[fetchingStates.value]}</p> : null}
 				</div>)}
 			<BlockieTextInput onInput={validateRecipientInput} label='Recipient Address' warn={showWarn.value.recipient} placeholder='0x133...789' />
 			{provider.value
