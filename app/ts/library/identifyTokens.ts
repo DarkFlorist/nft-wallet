@@ -116,7 +116,6 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 		if (isERC1155.success && nftInterface.decodeFunctionResult('supportsInterface', isERC1155.returnData)[0] === true) {
 			const tokenContract = new Contract(address, ERC1155ABI, provider)
 			const balance = await tokenContract.balanceOf(user, id)
-			console.log({ tokenContract, address, id })
 			const uri: string | undefined = erc1155Uri.success ? erc1155Interface.decodeFunctionResult('uri', erc1155Uri.returnData)[0] : undefined
 			return {
 				type: 'ERC1155',
