@@ -5,7 +5,7 @@ export const Footer = () => (
 				<h2 className='font-semibold'>Contact</h2>
 				<a href='https://discord.com/invite/aCSKcvf5VW' target='_blank' className='hover:underline text-white/50'>Discord</a>
 				<a href='https://twitter.com/DarkFlorist' target='_blank' className='hover:underline text-white/50'>Twitter</a>
-				<a href='https://github.com/DarkFlorist/TheInterceptor' target='_blank' className='hover:underline text-white/50'>Github</a>
+				<a href='https://github.com/DarkFlorist/nft-wallet' target='_blank' className='hover:underline text-white/50'>Github</a>
 			</div>
 			<div className='flex flex-col gap-2'>
 				<h2 className='font-semibold'>Our other tools</h2>
