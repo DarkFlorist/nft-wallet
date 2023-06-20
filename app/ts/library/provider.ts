@@ -1,11 +1,12 @@
 import { Signal } from '@preact/signals'
 import { Block, BrowserProvider, getAddress } from 'ethers'
+import { AddressParser, EthereumAddress } from '../types/ethereumTypes.js'
 import { BlockInfo } from './types.js'
 
 export type ProviderStore = {
 	provider: BrowserProvider
 	_clearEvents: () => unknown
-	walletAddress: string
+	walletAddress: EthereumAddress,
 	chainId: bigint
 }
 
@@ -18,9 +19,12 @@ const addProvider = async (
 	const address = await signer.getAddress()
 	if (store.peek()) removeProvider(store)
 
+	const parsedAddress = AddressParser.parse(getAddress(address))
+	if (!parsedAddress.success) throw new Error("Provider provided invalid address!")
+
 	store.value = {
 		provider,
-		walletAddress: getAddress(address),
+		walletAddress: parsedAddress.value,
 		chainId: network.chainId,
 		_clearEvents: clearEvents,
 	}
@@ -57,7 +61,9 @@ export const connectBrowserProvider = async (
 		if (accounts.length === 0) {
 			removeProvider(store)
 		} else {
-			store.value = store.value ? { ...store.value, walletAddress: getAddress(accounts[0]) } : undefined
+			const parsedAddress = AddressParser.parse(getAddress(accounts[0]))
+			if (!parsedAddress.success) throw new Error("Provider provided invalid address!")
+			store.value = store.value ? { ...store.value, walletAddress: parsedAddress.value } : undefined
 		}
 	}
 	const chainChangedCallback = async (chainId: string) => {

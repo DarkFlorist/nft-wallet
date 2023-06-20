@@ -1,8 +1,13 @@
-import { Signal } from '@preact/signals';
+import { Signal, useComputed, useSignal } from '@preact/signals';
 import { ERC721, ERC1155 } from '../library/identifyTokens.js'
-import Blockie from './Blockie.js';
+import { EthereumAddress } from '../types/ethereumTypes.js';
+import { Blockie } from './Blockie.js';
 
 export const ItemDetails = ({ item }: { item: Signal<ERC721 | ERC1155 | undefined> }) => {
+	const blockieScale = useSignal(4)
+	const tokenAddress = useComputed(() => item.value ? EthereumAddress.parse(item.value.address) : 0n)
+	const tokenOwner = useComputed(() => item.value && item.value.type === 'ERC721' ? EthereumAddress.parse(item.value.owner) : 0n)
+
 	// Loading State
 	if (!item.value) return <><div className='flex flex-col gap-4 flex-1 w-full max-w-xl'>
 		<div>
@@ -49,7 +54,7 @@ export const ItemDetails = ({ item }: { item: Signal<ERC721 | ERC1155 | undefine
 		<div className='flex flex-col gap-4 flex-1 w-full max-w-xl'>
 			<div>
 				<span className='text-sm text-white/50'>Contract Address</span>
-				<span className='truncate w-full flex items-center gap-2'><Blockie seed={item.value.address.toLowerCase()} size={4} />{item.value.address}</span>
+				<span className='truncate w-full flex items-center gap-2'><Blockie address={tokenAddress} scale={blockieScale} />{item.value.address}</span>
 			</div>
 			<div>
 				<span className='text-sm text-white/50'>Token ID</span>
@@ -78,11 +83,11 @@ export const ItemDetails = ({ item }: { item: Signal<ERC721 | ERC1155 | undefine
 		<div className='flex flex-col gap-4 flex-1 w-full max-w-xl'>
 			<div>
 				<span className='text-sm text-white/50'>Contract Address</span>
-				<span className='truncate w-full flex items-center gap-2'><Blockie seed={item.value.address.toLowerCase()} size={4} />{item.value.address}</span>
+				<span className='truncate w-full flex items-center gap-2'><Blockie address={tokenAddress} scale={blockieScale} />{item.value.address}</span>
 			</div>
 			<div>
 				<span className='text-sm text-white/50'>Owner</span>
-				<span className='truncate w-full flex items-center gap-2'><Blockie seed={item.value.owner.toLowerCase()} size={4} />{item.value.owner}</span>
+				<span className='truncate w-full flex items-center gap-2'><Blockie address={tokenOwner} scale={blockieScale} />{item.value.owner}</span>
 			</div>
 			<div>
 				<span className='text-sm text-white/50'>Token ID</span>

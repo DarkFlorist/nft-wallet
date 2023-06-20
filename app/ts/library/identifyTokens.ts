@@ -1,4 +1,6 @@
 import { Contract, Provider, Interface, ZeroAddress, BytesLike } from "ethers";
+import { EthereumAddress } from "../types/ethereumTypes.js";
+import { serialize } from "../types/wireTypes.js";
 import { ERC1155ABI, ERC20ABI, ERC721ABI, MulticallABI } from './abi.js'
 
 type EOA = {
@@ -40,7 +42,7 @@ export type ERC1155 = {
 
 export type IdentifiedAddress = (EOA | ERC20 | ERC721 | ERC1155 | UnknownContract) & { inputId: bigint }
 
-export async function itentifyAddress(address: string, id: bigint, provider: Provider, user: string): Promise<IdentifiedAddress> {
+export async function itentifyAddress(address: string, id: bigint, provider: Provider, user: EthereumAddress): Promise<IdentifiedAddress> {
 	const contractCode = await provider.getCode(address)
 	if (contractCode === '0x') return { type: 'EOA', address, inputId: id }
 
@@ -115,7 +117,8 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 
 		if (isERC1155.success && nftInterface.decodeFunctionResult('supportsInterface', isERC1155.returnData)[0] === true) {
 			const tokenContract = new Contract(address, ERC1155ABI, provider)
-			const balance = await tokenContract.balanceOf(user, id)
+			const userAddress = serialize(EthereumAddress, user)
+			const balance = await tokenContract.balanceOf(userAddress, id)
 			const uri: string | undefined = erc1155Uri.success ? erc1155Interface.decodeFunctionResult('uri', erc1155Uri.returnData)[0] : undefined
 			return {
 				type: 'ERC1155',

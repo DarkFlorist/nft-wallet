@@ -5,13 +5,13 @@ import { itentifyAddress, ERC721, ERC1155 } from '../library/identifyTokens.js'
 import { BlockInfo } from '../library/types.js';
 import { Button } from './Button.js';
 import { transferERC1155, transferERC721 } from '../library/transactions.js';
-
 import { knownNetworks } from '../library/networks.js'
 import { BlockieTextInput, NumberInput, TextInput, TokenAmountInput } from './Inputs.js';
 import { ItemDetails } from './ItemDetails.js';
+import { EthereumAddress } from '../types/ethereumTypes.js';
+import { serialize } from '../types/wireTypes.js';
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
-	// const showTokenPicker = useSignal<boolean>(false)
 	const selectedNft = useSignal<ERC721 | ERC1155 | undefined>(undefined)
 
 	// 'notfound' | 'badid' | 'noprovider' | 'EOA' | 'contract' | 'ERC20' | 'opensea'
@@ -151,12 +151,11 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 
 	function sendTransfer() {
 		if (selectedNft.value && recipientAddress.value && provider.value && selectedNft.value.type === 'ERC721') transferERC721(selectedNft.value, recipientAddress.value, provider.value.provider)
-		if (selectedNft.value && recipientAddress.value && provider.value && transferAmount.value && selectedNft.value.type === 'ERC1155') transferERC1155(selectedNft.value, provider.value.walletAddress, recipientAddress.value, transferAmount.value, provider.value.provider)
+		if (selectedNft.value && recipientAddress.value && provider.value && transferAmount.value && selectedNft.value.type === 'ERC1155') transferERC1155(selectedNft.value, serialize(EthereumAddress, provider.value.walletAddress), recipientAddress.value, transferAmount.value, provider.value.provider)
 	}
 
 	return (
 		<div className='flex flex-col gap-4 w-full max-w-screen-xl'>
-			{/* <TokenPicker show={showTokenPicker} nft={selectedNft} /> */}
 			<h2 className='text-3xl font-semibold'>Transfer NFTs</h2>
 			<div className='flex gap-4 flex-col sm:flex-row'>
 				<TextInput warn={showWarn.value.contract} value={contractAddressInput} size='w-full' label='Contract Address' placeholder='0x133...789 or OpenSea Item URL https://opensea.io/assets/...' />
