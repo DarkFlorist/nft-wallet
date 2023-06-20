@@ -1,7 +1,7 @@
-import { Signal, useComputed, useSignal } from '@preact/signals';
+import { Signal, useComputed, useSignal } from '@preact/signals'
 import { ERC721, ERC1155 } from '../library/identifyTokens.js'
-import { EthereumAddress } from '../types/ethereumTypes.js';
-import { Blockie } from './Blockie.js';
+import { EthereumAddress } from '../types/ethereumTypes.js'
+import { Blockie } from './Blockie.js'
 
 export const ItemDetails = ({ item }: { item: Signal<ERC721 | ERC1155 | undefined> }) => {
 	const blockieScale = useSignal(4)

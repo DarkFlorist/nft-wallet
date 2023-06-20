@@ -1,15 +1,15 @@
 import { batch, Signal, useComputed, useSignal, useSignalEffect } from '@preact/signals'
-import { getAddress } from 'ethers';
-import { connectBrowserProvider, ProviderStore } from '../library/provider.js';
+import { getAddress } from 'ethers'
+import { connectBrowserProvider, ProviderStore } from '../library/provider.js'
 import { itentifyAddress, ERC721, ERC1155 } from '../library/identifyTokens.js'
-import { BlockInfo } from '../library/types.js';
-import { Button } from './Button.js';
-import { transferERC1155, transferERC721 } from '../library/transactions.js';
+import { BlockInfo } from '../library/types.js'
+import { Button } from './Button.js'
+import { transferERC1155, transferERC721 } from '../library/transactions.js'
 import { knownNetworks } from '../library/networks.js'
-import { BlockieTextInput, NumberInput, TextInput, TokenAmountInput } from './Inputs.js';
-import { ItemDetails } from './ItemDetails.js';
-import { EthereumAddress } from '../types/ethereumTypes.js';
-import { serialize } from '../types/wireTypes.js';
+import { BlockieTextInput, NumberInput, TextInput, TokenAmountInput } from './Inputs.js'
+import { ItemDetails } from './ItemDetails.js'
+import { EthereumAddress } from '../types/ethereumTypes.js'
+import { serialize } from '../types/wireTypes.js'
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const selectedNft = useSignal<ERC721 | ERC1155 | undefined>(undefined)

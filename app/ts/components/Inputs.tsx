@@ -1,7 +1,7 @@
-import { Signal, useComputed, useSignal } from '@preact/signals';
-import { getAddress } from 'ethers';
-import { EthereumAddress } from '../types/ethereumTypes.js';
-import { Blockie } from './Blockie.js';
+import { Signal, useComputed, useSignal } from '@preact/signals'
+import { getAddress } from 'ethers'
+import { EthereumAddress } from '../types/ethereumTypes.js'
+import { Blockie } from './Blockie.js'
 
 export const NumberInput = ({ label, placeholder, size, warn, value }: { label: string, placeholder: string, warn?: boolean, size?: 'w-full' | 'w-max' | string, value: Signal<string | undefined> }) => (
 	<div className={`${size ?? ''} flex flex-col justify-center border ${warn ? 'border-red-400' : 'border-white/50 focus-within:border-white/80'} h-16 bg-transparent outline-none focus-within:bg-white/5 px-4 bg-transparent`} >

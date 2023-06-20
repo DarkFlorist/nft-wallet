@@ -1,6 +1,6 @@
-import { Contract, Provider, Interface, ZeroAddress, BytesLike } from "ethers";
-import { EthereumAddress } from "../types/ethereumTypes.js";
-import { serialize } from "../types/wireTypes.js";
+import { Contract, Provider, Interface, ZeroAddress, BytesLike } from "ethers"
+import { EthereumAddress } from "../types/ethereumTypes.js"
+import { serialize } from "../types/wireTypes.js"
 import { ERC1155ABI, ERC20ABI, ERC721ABI, MulticallABI } from './abi.js'
 
 type EOA = {
