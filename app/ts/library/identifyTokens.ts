@@ -64,10 +64,10 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 			target: address,
 			callData: nftInterface.encodeFunctionData('supportsInterface', ['0xd9b67a26']) // Is ERC1155
 		},
-		// {
-		// 	target: address,
-		// 	callData: nftInterface.encodeFunctionData('supportsInterface', ['0x0e89341c']) // Is ERC1155Metadata
-		// },
+		{
+			target: address,
+			callData: nftInterface.encodeFunctionData('supportsInterface', ['0x0e89341c']) // Is ERC1155Metadata
+		},
 		{
 			target: address,
 			callData: nftInterface.encodeFunctionData('ownerOf', [id])
@@ -98,7 +98,7 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 		}
 	]
 
-	const [isERC721, hasMetadata, isERC1155, owner, name, symbol, decimals, totalSupply, tokenURI, erc1155Uri]: { success: boolean, returnData: BytesLike }[] = await multicall.tryAggregate.staticCall(false, calls)
+	const [isERC721, hasMetadata, isERC1155, isERC1155Metadata, owner, name, symbol, decimals, totalSupply, tokenURI, erc1155Uri]: { success: boolean, returnData: BytesLike }[] = await multicall.tryAggregate.staticCall(false, calls)
 
 	try {
 
@@ -119,7 +119,7 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 			const tokenContract = new Contract(address, ERC1155ABI, provider)
 			const userAddress = serialize(EthereumAddress, user)
 			const balance = await tokenContract.balanceOf(userAddress, id)
-			const uri: string | undefined = erc1155Uri.success ? erc1155Interface.decodeFunctionResult('uri', erc1155Uri.returnData)[0] : undefined
+			const uri: string | undefined = erc1155Uri.success && isERC1155Metadata.success && erc1155Interface.decodeFunctionResult('supportsInterface', isERC1155Metadata.returnData)[0] === true ? erc1155Interface.decodeFunctionResult('uri', erc1155Uri.returnData)[0] : undefined
 			return {
 				type: 'ERC1155',
 				inputId: id,
