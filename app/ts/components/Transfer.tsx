@@ -62,7 +62,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 					const mappedNetwork = Object.keys(knownNetworks).reduce((match: string | undefined, chainId) => !match && knownNetworks[chainId].openseaSlug && knownNetworks[chainId].openseaSlug === network ? chainId : match, undefined)
 
 					if (!mappedNetwork) {
-						warning.value = 'NFT Sender doesn\'t recognize network from OpenSea URL'
+						warning.value = 'NFT Sender doesn\'t recognize network from the OpenSea URL'
 						contractAddress.value = undefined
 					} else if (BigInt(mappedNetwork) !== provider.value?.chainId) {
 						warning.value = `The NFT on the provided URL is on ${knownNetworks[mappedNetwork].displayName}, please change your wallet's network to ${knownNetworks[mappedNetwork].displayName}`
@@ -179,7 +179,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 						<div>
 							<strong>Warning:</strong> {warning}
 						</div>
-						<div class='leading-tight text-white/75 text-sm'>It is very likely sending this transaction will fail.</div>
+						<div class='leading-tight text-white/75 text-sm'>It is very likely that sending this transaction will fail.</div>
 					</div>
 				</div>
 			) : null}
