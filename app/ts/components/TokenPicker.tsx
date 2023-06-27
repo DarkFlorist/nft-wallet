@@ -1,4 +1,4 @@
-import { Signal, useSignal } from '@preact/signals';
+import { Signal, useSignal } from '@preact/signals'
 import { getAddress } from 'ethers'
 import { JSX } from 'preact/jsx-runtime'
 
