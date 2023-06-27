@@ -1,0 +1,165 @@
+import { jsx as _jsx, jsxs as _jsxs } from "preact/jsx-runtime";
+import { batch, useComputed, useSignal, useSignalEffect } from '@preact/signals';
+import { getAddress } from 'ethers';
+import { connectBrowserProvider } from '../library/provider.js';
+import { itentifyAddress } from '../library/identifyTokens.js';
+import { Button } from './Button.js';
+import { transferERC1155, transferERC721 } from '../library/transactions.js';
+import { knownNetworks } from '../library/networks.js';
+import { BlockieTextInput, NumberInput, TextInput, TokenAmountInput } from './Inputs.js';
+import { ItemDetails } from './ItemDetails.js';
+import { EthereumAddress } from '../types/ethereumTypes.js';
+import { serialize } from '../types/wireTypes.js';
+export const Transfer = ({ provider, blockInfo }) => {
+    const selectedNft = useSignal(undefined);
+    // 'notfound' | 'badid' | 'noprovider' | 'EOA' | 'contract' | 'ERC20' | 'opensea'
+    const fetchingStates = useSignal('empty');
+    const sendText = useComputed(() => {
+        if (!selectedNft.value)
+            return 'Input Token Details';
+        if (selectedNft.value.type === 'ERC1155' && !transferAmount.value)
+            return 'Missing transfer amount';
+        if (!recipientAddress.value)
+            return 'Missing Recipient';
+        return 'Send';
+    });
+    const warning = useSignal(undefined);
+    // const errorMessages: { [error: string]: string } = {
+    // 	notfound: 'No NFT found at address',
+    // 	contract: 'No NFT found at address',
+    // 	badid: 'Found NFT collection, but token ID does not exist',
+    // 	noprovider: 'Connect wallet to load token details.',
+    // 	EOA: 'Token address provided is an EOA',
+    // 	ERC20: 'Token address provided is an ERC20 contract',
+    // 	// if ('owner' in selectedNft.value && selectedNft.value.owner !== provider.value?.walletAddress) return 'You do not own this token'
+    // 	// if (recipient.value === provider.value?.walletAddress) return 'Cannot send to yourself'
+    // 	// if (recipient.value === selectedNft.value.address) return 'Cannot send to the NFT contract'
+    // }
+    const contractAddressInput = useSignal('');
+    const recipientInput = useSignal('');
+    const idInput = useSignal('');
+    const transferAmountInput = useSignal('');
+    useSignalEffect(() => {
+        if (provider.value) {
+            attemptToFetchNft(contractAddress.value, itemId.value);
+        }
+    });
+    useSignalEffect(() => {
+        if (contractAddressInput.value) {
+            batch(() => {
+                const openseaMatch = /^https?:\/\/opensea\.io\/assets\/([^\/]+)\/(0x[a-fA-F0-9]{40})\/(\d+)$/.exec(contractAddressInput.value);
+                if (openseaMatch === null) {
+                    const value = contractAddressInput.value.toLowerCase().trim();
+                    contractAddress.value = /^0x[a-f0-9]*$/.test(value) && value.length === 42 ? getAddress(value) : undefined;
+                }
+                else {
+                    // Parse OpenSea URL
+                    const [_, network, address, id] = openseaMatch;
+                    const mappedNetwork = Object.keys(knownNetworks).reduce((match, chainId) => !match && knownNetworks[chainId].openseaSlug && knownNetworks[chainId].openseaSlug === network ? chainId : match, undefined);
+                    if (!mappedNetwork) {
+                        warning.value = 'NFT Sender doesn\'t recognize network from the OpenSea URL';
+                        contractAddress.value = undefined;
+                    }
+                    else if (BigInt(mappedNetwork) !== provider.value?.chainId) {
+                        warning.value = `The NFT on the provided URL is on ${knownNetworks[mappedNetwork].displayName}, please change your wallet's network to ${knownNetworks[mappedNetwork].displayName}`;
+                        contractAddress.value = undefined;
+                    }
+                    else {
+                        warning.value = undefined;
+                        contractAddressInput.value = getAddress(address);
+                        contractAddress.value = getAddress(address);
+                        idInput.value = id;
+                    }
+                }
+            });
+        }
+        else {
+            contractAddress.value = undefined;
+        }
+    });
+    useSignalEffect(() => {
+        if (idInput.value) {
+            const value = idInput.value.trim();
+            itemId.value = /^\d+$/.test(value) ? BigInt(value) : undefined;
+        }
+        else {
+            itemId.value = undefined;
+        }
+    });
+    useSignalEffect(() => {
+        if (transferAmountInput.value) {
+            const value = transferAmountInput.value.trim();
+            let amount = /^\d+$/.test(value) ? BigInt(value) : undefined;
+            batch(() => {
+                if (amount && selectedNft.value && selectedNft.value.type === 'ERC1155' && amount > selectedNft.value.balance)
+                    warning.value = 'Transfer amount is greater than your wallet\'s balance';
+                transferAmount.value = amount;
+            });
+        }
+        else {
+            transferAmount.value = undefined;
+        }
+    });
+    const recipientAddress = useComputed(() => {
+        if (!recipientInput.value)
+            return undefined;
+        const value = recipientInput.value.toLowerCase().trim();
+        return /^0x[a-f0-9]*$/.test(value) && value.length === 42 ? getAddress(value) : undefined;
+    });
+    const contractAddress = useSignal(undefined);
+    const itemId = useSignal(undefined);
+    const transferAmount = useSignal(undefined);
+    const showWarn = useComputed(() => {
+        const id = idInput.value !== '' && itemId.value === undefined;
+        const amount = transferAmountInput.value !== '' && transferAmount.value === undefined;
+        const recipient = recipientInput.value !== '' && recipientAddress.value === undefined;
+        const contract = contractAddressInput.value !== '' && contractAddress.value === undefined;
+        return { id, amount, recipient, contract };
+    });
+    async function attemptToFetchNft(address, id) {
+        if (address === undefined || id === undefined) {
+            return fetchingStates.value = 'empty';
+        }
+        selectedNft.value = undefined;
+        if (!provider.value?.provider) {
+            return warning.value = 'noprovider';
+        }
+        fetchingStates.value = 'fetching';
+        try {
+            const identifiedAddress = await itentifyAddress(address, id, provider.value?.provider, provider.value?.walletAddress);
+            if (identifiedAddress.address === contractAddress.value && identifiedAddress.inputId === itemId.value) {
+                if (identifiedAddress.type === 'ERC721') {
+                    selectedNft.value = identifiedAddress;
+                }
+                else if (identifiedAddress.type === 'ERC1155') {
+                    selectedNft.value = identifiedAddress;
+                }
+                else if (identifiedAddress.type === 'ERC20') {
+                    warning.value = 'Token address provided is an ERC20 contract';
+                }
+            }
+        }
+        catch (e) {
+            console.log(e);
+            if (typeof e === 'object' && e !== null && 'message' in e) {
+                if (e.message === 'No ERC721 found at address')
+                    return warning.value = 'Invalid token ID for the provided ERC721';
+                if (e.message === 'Token ID does not exist')
+                    return warning.value = 'badid';
+            }
+            return console.error(e);
+        }
+    }
+    function sendTransfer() {
+        if (selectedNft.value && recipientAddress.value && provider.value && selectedNft.value.type === 'ERC721')
+            transferERC721(selectedNft.value, recipientAddress.value, provider.value.provider);
+        if (selectedNft.value && recipientAddress.value && provider.value && transferAmount.value && selectedNft.value.type === 'ERC1155')
+            transferERC1155(selectedNft.value, serialize(EthereumAddress, provider.value.walletAddress), recipientAddress.value, transferAmount.value, provider.value.provider);
+    }
+    return (_jsxs("div", { className: 'flex flex-col gap-4 w-full max-w-screen-xl', children: [_jsx("h2", { className: 'text-3xl font-semibold', children: "Transfer NFTs" }), _jsxs("div", { className: 'flex gap-4 flex-col sm:flex-row', children: [_jsx(TextInput, { warn: showWarn.value.contract, value: contractAddressInput, size: 'w-full', label: 'Contract Address', placeholder: '0x133...789 or OpenSea Item URL https://opensea.io/assets/...' }), _jsx(NumberInput, { warn: showWarn.value.id, label: 'Token ID', placeholder: '1', value: idInput })] }), selectedNft.value?.type === 'ERC1155' ?
+                _jsx("div", { className: 'flex gap-4 flex-col sm:flex-row', children: _jsx(TokenAmountInput, { balance: selectedNft.value.balance, value: transferAmountInput, warn: showWarn.value.amount, label: 'Transfer Amount', size: 'w-full', placeholder: '1' }) })
+                : null, fetchingStates.value !== 'empty' ? (_jsx("div", { className: 'flex flex-row flex-wrap border border-white/50 p-4 h-max gap-4', children: fetchingStates.value === 'fetching' ? _jsx(ItemDetails, { item: selectedNft }) : null })) : null, _jsx(BlockieTextInput, { value: recipientInput, label: 'Recipient Address', warn: showWarn.value.recipient, placeholder: '0x133...789' }), warning.value ? (_jsxs("div", { class: 'flex items-center items-center border border-orange-400/50 bg-orange-400/10 px-4 py-2 gap-4', children: ["\u24D8", _jsxs("div", { class: 'py-3 flex-grow', children: [_jsxs("div", { children: [_jsx("strong", { children: "Warning:" }), " ", warning] }), _jsx("div", { class: 'leading-tight text-white/75 text-sm', children: "It is very likely that sending this transaction will fail." })] })] })) : null, provider.value
+                ? _jsx(Button, { variant: 'full', disabled: sendText.value !== 'Send', onClick: sendTransfer, children: sendText.value })
+                : _jsx(Button, { variant: 'full', onClick: () => connectBrowserProvider(provider, blockInfo), children: "Connect Wallet" })] }));
+};
+//# sourceMappingURL=Transfer.js.map
