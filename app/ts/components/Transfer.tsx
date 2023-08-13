@@ -1,7 +1,7 @@
 import { batch, Signal, useComputed, useSignal, useSignalEffect } from '@preact/signals'
 import { getAddress } from 'ethers'
 import { connectBrowserProvider, ProviderStore } from '../library/provider.js'
-import { itentifyAddress, ERC721, ERC1155 } from '../library/identifyTokens.js'
+import { itentifyAddress, ERC721, ERC1155, SupportedToken } from '../library/identifyTokens.js'
 import { BlockInfo } from '../library/types.js'
 import { Button } from './Button.js'
 import { transferERC1155, transferERC721 } from '../library/transactions.js'
@@ -10,8 +10,6 @@ import { BlockieTextInput, NumberInput, TextInput, TokenAmountInput } from './In
 import { ItemDetails } from './ItemDetails.js'
 import { EthereumAddress } from '../types/ethereumTypes.js'
 import { serialize } from '../types/wireTypes.js'
-
-type SupportedToken = ERC721 | ERC1155
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const selectedNft = useSignal<ERC721 | ERC1155 | undefined>(undefined)
@@ -121,7 +119,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		try {
 			const identifiedAssets = await itentifyAddress(address, id, provider.value?.provider, provider.value?.walletAddress)
 			if (identifiedAssets[0].address === contractAddress.value && identifiedAssets[0].inputId === itemId.value) {
-				const supportedTypes = identifiedAssets.filter((token) => ['ERC721', 'ERC1155'].includes(token.type)) as SupportedToken[]
+				const supportedTypes = identifiedAssets.filter((token): token is SupportedToken => ['ERC721', 'ERC1155'].includes(token.type))
 				if (supportedTypes.length === 0) warning.value = identifiedAssets[0].type === 'ERC20' ? 'Token address provided is an ERC20 contract' : 'Token address provided is an EOA'
 				else {
 					selectedNft.value = supportedTypes[0]

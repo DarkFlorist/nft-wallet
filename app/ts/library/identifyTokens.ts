@@ -41,6 +41,8 @@ export type ERC1155 = {
 }
 
 export type IdentifiedAddress = (EOA | ERC20 | ERC721 | ERC1155 | UnknownContract) & { inputId: bigint }
+export type SupportedToken = (ERC721 | ERC1155) & { inputId: bigint }
+
 
 export async function itentifyAddress(address: string, id: bigint, provider: Provider, user: EthereumAddress): Promise<IdentifiedAddress[]> {
 	const contractCode = await provider.getCode(address)
