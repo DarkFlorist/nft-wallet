@@ -1,7 +1,7 @@
 import { batch, Signal, useComputed, useSignal, useSignalEffect } from '@preact/signals'
 import { getAddress } from 'ethers'
 import { connectBrowserProvider, ProviderStore } from '../library/provider.js'
-import { itentifyAddress, ERC721, ERC1155 } from '../library/identifyTokens.js'
+import { itentifyAddress, ERC721, ERC1155, SupportedToken } from '../library/identifyTokens.js'
 import { BlockInfo } from '../library/types.js'
 import { Button } from './Button.js'
 import { transferERC1155, transferERC721 } from '../library/transactions.js'
@@ -13,8 +13,8 @@ import { serialize } from '../types/wireTypes.js'
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const selectedNft = useSignal<ERC721 | ERC1155 | undefined>(undefined)
+	const selectedMultiAssets = useSignal<{ assets: (ERC721 | ERC1155)[] , displayIndex: number }>({ assets: [], displayIndex: 0 })
 
-	// 'notfound' | 'badid' | 'noprovider' | 'EOA' | 'contract' | 'ERC20' | 'opensea'
 	const fetchingStates = useSignal<'empty' | 'fetching' | 'complete'>('empty')
 
 	const sendText = useComputed(() => {
@@ -25,18 +25,6 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 	})
 
 	const warning = useSignal<string | undefined>(undefined)
-
-	// const errorMessages: { [error: string]: string } = {
-	// 	notfound: 'No NFT found at address',
-	// 	contract: 'No NFT found at address',
-	// 	badid: 'Found NFT collection, but token ID does not exist',
-	// 	noprovider: 'Connect wallet to load token details.',
-	// 	EOA: 'Token address provided is an EOA',
-	// 	ERC20: 'Token address provided is an ERC20 contract',
-	// 	// if ('owner' in selectedNft.value && selectedNft.value.owner !== provider.value?.walletAddress) return 'You do not own this token'
-	// 	// if (recipient.value === provider.value?.walletAddress) return 'Cannot send to yourself'
-	// 	// if (recipient.value === selectedNft.value.address) return 'Cannot send to the NFT contract'
-	// }
 
 	const contractAddressInput = useSignal<string>('')
 	const recipientInput = useSignal<string>('')
@@ -129,14 +117,14 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		}
 		fetchingStates.value = 'fetching'
 		try {
-			const identifiedAddress = await itentifyAddress(address, id, provider.value?.provider, provider.value?.walletAddress)
-			if (identifiedAddress.address === contractAddress.value && identifiedAddress.inputId === itemId.value) {
-				if (identifiedAddress.type === 'ERC721') {
-					selectedNft.value = identifiedAddress
-				} else if (identifiedAddress.type === 'ERC1155') {
-					selectedNft.value = identifiedAddress
-				} else if (identifiedAddress.type === 'ERC20') {
-					warning.value = 'Token address provided is an ERC20 contract'
+			const identifiedAssets = await itentifyAddress(address, id, provider.value?.provider, provider.value?.walletAddress)
+			if (identifiedAssets[0].address === contractAddress.value && identifiedAssets[0].inputId === itemId.value) {
+				const supportedTypes = identifiedAssets.filter((token): token is SupportedToken => ['ERC721', 'ERC1155'].includes(token.type))
+				if (supportedTypes.length === 0) warning.value = identifiedAssets[0].type === 'ERC20' ? 'Token address provided is an ERC20 contract' : 'Token address provided is an EOA'
+				else {
+					selectedNft.value = supportedTypes[0]
+					if (supportedTypes.length > 1) selectedMultiAssets.value = { displayIndex: selectedMultiAssets.peek().displayIndex >= supportedTypes.length ? 0 : selectedMultiAssets.peek().displayIndex, assets: supportedTypes }
+					else selectedMultiAssets.value = { displayIndex: selectedMultiAssets.value.displayIndex, assets: [] }
 				}
 			}
 		} catch (e) {
@@ -161,6 +149,19 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 				<TextInput warn={showWarn.value.contract} value={contractAddressInput} size='w-full' label='Contract Address' placeholder='0x133...789 or OpenSea Item URL https://opensea.io/assets/...' />
 				<NumberInput warn={showWarn.value.id} label='Token ID' placeholder='1' value={idInput} />
 			</div>
+			{selectedMultiAssets.value.assets.length > 0 ?
+			<div className='flex items-center gap-2'>
+				<div>
+					<h3 className='text-md font-semibold'>Multiple NFT Types Detected</h3>
+					<p className='text-sm'>Select Target NFT Type</p>
+				</div>
+				{selectedMultiAssets.value.assets.map((asset, index) =>
+					<Button variant={index === selectedMultiAssets.value.displayIndex ? 'primary' : 'secondary'} onClick={() => batch(() => {
+						selectedMultiAssets.value = { ...selectedMultiAssets.peek(), displayIndex: index }
+						selectedNft.value = asset
+					})}>{asset.type}</Button>
+				)}
+			</div> : null}
 			{selectedNft.value?.type === 'ERC1155' ?
 				<div className='flex gap-4 flex-col sm:flex-row'>
 					<TokenAmountInput balance={selectedNft.value.balance} value={transferAmountInput} warn={showWarn.value.amount} label='Transfer Amount' size='w-full' placeholder='1' />

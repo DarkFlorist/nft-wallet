@@ -41,10 +41,12 @@ export type ERC1155 = {
 }
 
 export type IdentifiedAddress = (EOA | ERC20 | ERC721 | ERC1155 | UnknownContract) & { inputId: bigint }
+export type SupportedToken = (ERC721 | ERC1155) & { inputId: bigint }
 
-export async function itentifyAddress(address: string, id: bigint, provider: Provider, user: EthereumAddress): Promise<IdentifiedAddress> {
+
+export async function itentifyAddress(address: string, id: bigint, provider: Provider, user: EthereumAddress): Promise<IdentifiedAddress[]> {
 	const contractCode = await provider.getCode(address)
-	if (contractCode === '0x') return { type: 'EOA', address, inputId: id }
+	if (contractCode === '0x') return [{ type: 'EOA', address, inputId: id }]
 
 	const multicall = new Contract('0x5ba1e12693dc8f9c48aad8770482f4739beed696', MulticallABI, provider)
 	const nftInterface = new Interface(ERC721ABI)
@@ -100,11 +102,11 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 
 	const [isERC721, hasMetadata, isERC1155, isERC1155Metadata, owner, name, symbol, decimals, totalSupply, tokenURI, erc1155Uri]: { success: boolean, returnData: BytesLike }[] = await multicall.tryAggregate.staticCall(false, calls)
 
-	try {
+	let matchingAssetTypes: IdentifiedAddress[] = []
 
-		if (isERC721.success && nftInterface.decodeFunctionResult('supportsInterface', isERC721.returnData)[0] === true) {
-			if (owner.success === false || nftInterface.decodeFunctionResult('ownerOf', owner.returnData)[0] === ZeroAddress) throw new Error('No ERC721 found at address')
-			return {
+	try {
+		if (isERC721.success && nftInterface.decodeFunctionResult('supportsInterface', isERC721.returnData)[0] === true && owner.success === false && nftInterface.decodeFunctionResult('ownerOf', owner.returnData)[0] === ZeroAddress) {
+			matchingAssetTypes.push({
 				type: 'ERC721',
 				inputId: id,
 				address,
@@ -112,26 +114,34 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 				owner: nftInterface.decodeFunctionResult('ownerOf', owner.returnData)[0],
 				name: hasMetadata.success ? nftInterface.decodeFunctionResult('name', name.returnData)[0] : undefined,
 				tokenURI: hasMetadata.success ? nftInterface.decodeFunctionResult('tokenURI', tokenURI.returnData)[0] : undefined,
-			}
+			})
 		}
+	} catch (error) {
+		console.error(error)
+	}
 
+	try {
 		if (isERC1155.success && nftInterface.decodeFunctionResult('supportsInterface', isERC1155.returnData)[0] === true) {
 			const tokenContract = new Contract(address, ERC1155ABI, provider)
 			const userAddress = serialize(EthereumAddress, user)
 			const balance = await tokenContract.balanceOf(userAddress, id)
 			const uri: string | undefined = erc1155Uri.success && isERC1155Metadata.success && erc1155Interface.decodeFunctionResult('supportsInterface', isERC1155Metadata.returnData)[0] === true ? erc1155Interface.decodeFunctionResult('uri', erc1155Uri.returnData)[0] : undefined
-			return {
+			matchingAssetTypes.push({
 				type: 'ERC1155',
 				inputId: id,
 				id,
 				address,
 				balance,
 				tokenURI: uri ? uri.replaceAll(`{id}`, id.toString(10)) : undefined,
-			}
+			})
 		}
+	} catch (error) {
+		console.error(error)
+	}
 
+	try {
 		if (name.success && decimals.success && symbol.success && totalSupply.success) {
-			return {
+			matchingAssetTypes.push({
 				type: 'ERC20',
 				inputId: id,
 				address,
@@ -139,15 +149,12 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 				symbol: erc20Interface.decodeFunctionResult('name', symbol.returnData)[0],
 				decimals: BigInt(erc20Interface.decodeFunctionResult('decimals', decimals.returnData)[0]),
 				totalSupply: erc20Interface.decodeFunctionResult('totalSupply', totalSupply.returnData)[0]
-			}
+			})
 		}
-
 	} catch (error) {
-		// For any reason decoding txing fails catch and return as unknown contract
 		console.error(error)
-		return { type: 'contract', address, inputId: id }
 	}
 
 	// If doesn't pass checks being an ERC20 or ERC721, then we only know its a contract
-	return { type: 'contract', address, inputId: id }
+	return matchingAssetTypes.length > 0 ? matchingAssetTypes : [{ type: 'contract', address, inputId: id }]
 }
