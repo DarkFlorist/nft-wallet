@@ -105,7 +105,7 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 	let matchingAssetTypes: IdentifiedAddress[] = []
 
 	try {
-		if (isERC721.success && nftInterface.decodeFunctionResult('supportsInterface', isERC721.returnData)[0] === true && owner.success === false && nftInterface.decodeFunctionResult('ownerOf', owner.returnData)[0] === ZeroAddress) {
+		if (isERC721.success && nftInterface.decodeFunctionResult('supportsInterface', isERC721.returnData)[0] === true && owner.success === true && nftInterface.decodeFunctionResult('ownerOf', owner.returnData)[0] !== ZeroAddress) {
 			matchingAssetTypes.push({
 				type: 'ERC721',
 				inputId: id,

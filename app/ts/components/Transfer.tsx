@@ -31,58 +31,62 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 	const idInput = useSignal<string>('')
 	const transferAmountInput = useSignal<string>('')
 
+	function validateAddressInput() {
+		batch(() => {
+			const openseaMatch = /^https?:\/\/opensea\.io\/assets\/([^\/]+)\/(0x[a-fA-F0-9]{40})\/(\d+)$/.exec(contractAddressInput.value)
+			if (openseaMatch === null) {
+				const value = contractAddressInput.value.toLowerCase().trim()
+				contractAddress.value = /^0x[a-f0-9]*$/.test(value) && value.length === 42 ? getAddress(value) : undefined
+				warning.value = undefined
+			} else {
+				// Parse OpenSea URL
+				const [_, network, address, id] = openseaMatch
+				const mappedNetwork = Object.keys(knownNetworks).reduce((match: string | undefined, chainId) => !match && knownNetworks[chainId].openseaSlug && knownNetworks[chainId].openseaSlug === network ? chainId : match, undefined)
+
+				if (!mappedNetwork) {
+					warning.value = 'NFT Sender doesn\'t recognize network from the OpenSea URL'
+					contractAddress.value = undefined
+				} else if (BigInt(mappedNetwork) !== provider.value?.chainId) {
+					warning.value = provider.value ? `The NFT on the provided URL is on ${knownNetworks[mappedNetwork].displayName}, please change your wallet's network to ${knownNetworks[mappedNetwork].displayName}` : 'Please connect your wallet to fetch NFT details'
+					contractAddress.value = undefined
+					contractAddressInput.value = getAddress(address)
+					contractAddress.value = getAddress(address)
+					idInput.value = id
+				} else {
+					warning.value = undefined
+					contractAddressInput.value = getAddress(address)
+					contractAddress.value = getAddress(address)
+					idInput.value = id
+				}
+			}
+		})
+	}
+
+
 	useSignalEffect(() => {
 		if (provider.value) {
+			validateAddressInput()
 			attemptToFetchNft(contractAddress.value, itemId.value)
 		}
 	})
 
 	useSignalEffect(() => {
-		if (contractAddressInput.value) {
-			batch(() => {
-				const openseaMatch = /^https?:\/\/opensea\.io\/assets\/([^\/]+)\/(0x[a-fA-F0-9]{40})\/(\d+)$/.exec(contractAddressInput.value)
-				if (openseaMatch === null) {
-					const value = contractAddressInput.value.toLowerCase().trim()
-					contractAddress.value = /^0x[a-f0-9]*$/.test(value) && value.length === 42 ? getAddress(value) : undefined
-				} else {
-					// Parse OpenSea URL
-					const [_, network, address, id] = openseaMatch
-					const mappedNetwork = Object.keys(knownNetworks).reduce((match: string | undefined, chainId) => !match && knownNetworks[chainId].openseaSlug && knownNetworks[chainId].openseaSlug === network ? chainId : match, undefined)
+		if (contractAddressInput.value) validateAddressInput()
+		else contractAddress.value = undefined
 
-					if (!mappedNetwork) {
-						warning.value = 'NFT Sender doesn\'t recognize network from the OpenSea URL'
-						contractAddress.value = undefined
-					} else if (BigInt(mappedNetwork) !== provider.value?.chainId) {
-						warning.value = `The NFT on the provided URL is on ${knownNetworks[mappedNetwork].displayName}, please change your wallet's network to ${knownNetworks[mappedNetwork].displayName}`
-						contractAddress.value = undefined
-					} else {
-						warning.value = undefined
-						contractAddressInput.value = getAddress(address)
-						contractAddress.value = getAddress(address)
-						idInput.value = id
-					}
-				}
-			})
-		} else {
-			contractAddress.value = undefined
-		}
-	})
-
-	useSignalEffect(() => {
 		if (idInput.value) {
 			const value = idInput.value.trim()
 			itemId.value = /^\d+$/.test(value) ? BigInt(value) : undefined
 		} else {
 			itemId.value = undefined
 		}
-	})
 
-	useSignalEffect(() => {
 		if (transferAmountInput.value) {
 			const value = transferAmountInput.value.trim()
 			let amount = /^\d+$/.test(value) ? BigInt(value) : undefined
 			batch(() => {
 				if (amount && selectedNft.value && selectedNft.value.type === 'ERC1155' && amount > selectedNft.value.balance) warning.value = 'Transfer amount is greater than your wallet\'s balance'
+				else warning.value = undefined
 				transferAmount.value = amount
 			})
 		} else {
@@ -109,7 +113,11 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 
 	async function attemptToFetchNft(address: string | undefined, id: bigint | undefined) {
 		if (address === undefined || id === undefined) {
-			return fetchingStates.value = 'empty'
+			return batch(() => {
+				selectedNft.value = undefined
+				transferAmount.value = undefined
+				fetchingStates.value = 'empty'
+			})
 		}
 		selectedNft.value = undefined;
 		if (!provider.value?.provider) {
@@ -117,12 +125,27 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		}
 		fetchingStates.value = 'fetching'
 		try {
+// <<<<<<< HEAD
+			// const identifiedAddress = await itentifyAddress(address, id, provider.value?.provider, provider.value?.walletAddress)
+			// if (identifiedAddress.address === contractAddress.value && identifiedAddress.inputId === itemId.value) {
+			// 	if (identifiedAddress.type === 'ERC721') {
+			// 		selectedNft.value = identifiedAddress
+
+			// 	} else if (identifiedAddress.type === 'ERC1155') {
+			// 		selectedNft.value = identifiedAddress
+			// 	} else if (identifiedAddress.type === 'ERC20') {
+			// 		warning.value = 'Token address provided is an ERC20 contract'
+// =======
 			const identifiedAssets = await itentifyAddress(address, id, provider.value?.provider, provider.value?.walletAddress)
 			if (identifiedAssets[0].address === contractAddress.value && identifiedAssets[0].inputId === itemId.value) {
 				const supportedTypes = identifiedAssets.filter((token): token is SupportedToken => ['ERC721', 'ERC1155'].includes(token.type))
-				if (supportedTypes.length === 0) warning.value = identifiedAssets[0].type === 'ERC20' ? 'Token address provided is an ERC20 contract' : 'Token address provided is an EOA'
-				else {
+				if (supportedTypes.length === 0) {
+					if (identifiedAssets[0].type === 'ERC20') warning.value = 'Token address provided is an ERC20 contract'
+					else if (identifiedAssets[0].type === 'EOA') warning.value = 'Token address provided is an EOA'
+					else warning.value = 'NFT not detected at provided contract address'
+				} else {
 					selectedNft.value = supportedTypes[0]
+					if (provider.value && selectedNft.value.type === 'ERC721' && BigInt(selectedNft.value.owner) !== provider.value.walletAddress) warning.value = 'You do not own this NFT'
 					if (supportedTypes.length > 1) selectedMultiAssets.value = { displayIndex: selectedMultiAssets.peek().displayIndex >= supportedTypes.length ? 0 : selectedMultiAssets.peek().displayIndex, assets: supportedTypes }
 					else selectedMultiAssets.value = { displayIndex: selectedMultiAssets.value.displayIndex, assets: [] }
 				}
@@ -159,6 +182,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 					<Button variant={index === selectedMultiAssets.value.displayIndex ? 'primary' : 'secondary'} onClick={() => batch(() => {
 						selectedMultiAssets.value = { ...selectedMultiAssets.peek(), displayIndex: index }
 						selectedNft.value = asset
+						warning.value = provider.value && selectedNft.value.type === 'ERC721' && BigInt(selectedNft.value.owner) !== provider.value.walletAddress ? 'You do not own this NFT' : undefined
 					})}>{asset.type}</Button>
 				)}
 			</div> : null}
@@ -180,7 +204,6 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 						<div>
 							<strong>Warning:</strong> {warning}
 						</div>
-						<div class='leading-tight text-white/75 text-sm'>It is very likely that sending this transaction will fail.</div>
 					</div>
 				</div>
 			) : null}
