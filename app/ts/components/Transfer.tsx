@@ -13,8 +13,6 @@ import { serialize } from '../types/wireTypes.js'
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const selectedNft = useSignal<ERC721 | ERC1155 | undefined>(undefined)
-
-	// 'notfound' | 'badid' | 'noprovider' | 'EOA' | 'contract' | 'ERC20' | 'opensea'
 	const fetchingStates = useSignal<'empty' | 'fetching' | 'complete'>('empty')
 
 	const sendText = useComputed(() => {
@@ -25,18 +23,6 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 	})
 
 	const warning = useSignal<string | undefined>(undefined)
-
-	// const errorMessages: { [error: string]: string } = {
-	// 	notfound: 'No NFT found at address',
-	// 	contract: 'No NFT found at address',
-	// 	badid: 'Found NFT collection, but token ID does not exist',
-	// 	noprovider: 'Connect wallet to load token details.',
-	// 	EOA: 'Token address provided is an EOA',
-	// 	ERC20: 'Token address provided is an ERC20 contract',
-	// 	// if ('owner' in selectedNft.value && selectedNft.value.owner !== provider.value?.walletAddress) return 'You do not own this token'
-	// 	// if (recipient.value === provider.value?.walletAddress) return 'Cannot send to yourself'
-	// 	// if (recipient.value === selectedNft.value.address) return 'Cannot send to the NFT contract'
-	// }
 
 	const contractAddressInput = useSignal<string>('')
 	const recipientInput = useSignal<string>('')
@@ -141,6 +127,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 			if (identifiedAddress.address === contractAddress.value && identifiedAddress.inputId === itemId.value) {
 				if (identifiedAddress.type === 'ERC721') {
 					selectedNft.value = identifiedAddress
+					if (provider.value && BigInt(identifiedAddress.owner) !== provider.value.walletAddress) warning.value = 'You do not own this NFT'
 				} else if (identifiedAddress.type === 'ERC1155') {
 					selectedNft.value = identifiedAddress
 				} else if (identifiedAddress.type === 'ERC20') {
