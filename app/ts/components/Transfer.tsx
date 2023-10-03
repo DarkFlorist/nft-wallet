@@ -162,7 +162,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		}
 
 		if (selectedNft.value.type === 'ERC1155' && transferAmount.value) {
-			const txRequestPromise = transferERC1155(selectedNft.value, serialize(EthereumAddress, provider.value.walletAddress), recipientAddress.value, transferAmount.value, provider.value.provider);
+			const txRequestPromise = transferERC1155(selectedNft.value, serialize(EthereumAddress, provider.value.walletAddress), recipientAddress.value, transferAmount.value, provider.value.provider)
 			return waitForTransaction(() => txRequestPromise)
 		}
 	}
@@ -199,13 +199,13 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 				</div>
 			) : null}
 			<BlockieTextInput value={recipientInput} label='Recipient Address' warn={showWarn.value.recipient} placeholder='0x133...789' />
-			{warning.value ? <SingleNotice variant='warn' description={warning.value} title="Warning" /> : null}
+			{warning.value ? <SingleNotice variant='warn' description={warning.value} title='Warning' /> : null}
 			{provider.value
 				? <Button variant='full' disabled={sendText.value !== 'Send'} onClick={sendTransfer}>{sendText.value}</Button>
 				: <Button variant='full' onClick={() => connectBrowserProvider(provider, blockInfo)}>Connect Wallet</Button>
 			}
-			{transactionReceipt.value.state === 'rejected' && transactionReceipt.value.error.warning ? <SingleNotice variant='error' description={transactionReceipt.value.error.message} title="Error Sending Transfer" /> : null}
-			{transactionReceipt.value.state === 'resolved' ? <SingleNotice variant='success' description={`Transaction Hash: ${transactionReceipt.value.value.hash}`} title="Tranaction Submitted" /> : null}
+			{transactionReceipt.value.state === 'rejected' && transactionReceipt.value.error.warning ? <SingleNotice variant='error' description={transactionReceipt.value.error.message} title='Error Sending Transfer' /> : null}
+			{transactionReceipt.value.state === 'resolved' ? <SingleNotice variant='success' description={`Transaction Hash: ${transactionReceipt.value.value.hash}`} title='Tranaction Submitted' /> : null}
 		</div>
 	)
 }

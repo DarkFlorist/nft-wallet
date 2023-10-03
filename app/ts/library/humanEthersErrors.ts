@@ -41,62 +41,62 @@ export function humanReadableEthersError(error: unknown): HumanReadableEthersErr
 		switch (error.code) {
 				// Generic Errors
 			case 'UNKNOWN_ERROR':
-				console.error("Found UNKNOWN_ERROR error: ", error)
+				console.error('Found UNKNOWN_ERROR error: ', error)
 				return { warning: true, message: `Unknown Error: ${typeof error === 'string' ? error : JSON.stringify(error)}` }
 			case 'NOT_IMPLEMENTED':
-				console.error("Found NOT_IMPLEMENTED Error: ", error)
-				return { warning: true, message: `Error with EthersJS: "${error.info ? JSON.stringify(error.info) : ''}". This is a bug and you should report it.`};
+				console.error('Found NOT_IMPLEMENTED Error: ', error)
+				return { warning: true, message: `Error with EthersJS: "${error.info ? JSON.stringify(error.info) : ''}". This is a bug and you should report it.`}
 			case 'UNSUPPORTED_OPERATION':
-				return { warning: true, message: `Attempted to execute an unsupported operation: "${error.info ? JSON.stringify(error.info) : ''}". This is a bug and you should report it.` };
+				return { warning: true, message: `Attempted to execute an unsupported operation: "${error.info ? JSON.stringify(error.info) : ''}". This is a bug and you should report it.` }
 			case 'SERVER_ERROR':
-				return { warning: true, message: `Could not communicate with server. ${error.info ? JSON.stringify(error.info) : ''}` };
+				return { warning: true, message: `Could not communicate with server. ${error.info ? JSON.stringify(error.info) : ''}` }
 			case 'TIMEOUT':
-				return { warning: true, message: `Timeout during action "${error.operation}". ${error.reason}` };
+				return { warning: true, message: `Timeout during action "${error.operation}". ${error.reason}` }
 			case 'BAD_DATA':
-				return { warning: true, message: `EthersJS tried failed to understand this value: ${JSON.stringify(error.value)}. This is likely a bug and you should report it.` };
+				return { warning: true, message: `EthersJS tried failed to understand this value: ${JSON.stringify(error.value)}. This is likely a bug and you should report it.` }
 			case 'CANCELLED':
-				return { warning: false, message: `Request was canceled by app. ${error.info ? JSON.stringify(error.info) : ''}` };
+				return { warning: false, message: `Request was canceled by app. ${error.info ? JSON.stringify(error.info) : ''}` }
 			// Operational Errors
 			case 'BUFFER_OVERRUN':
-				return { warning: true, message: `Buffer overrun. This likely a bug and you should report it. ${error.info ? JSON.stringify(error.info): ''}` };
+				return { warning: true, message: `Buffer overrun. This likely a bug and you should report it. ${error.info ? JSON.stringify(error.info): ''}` }
 			case 'NUMERIC_FAULT':
-				return { warning: true, message: `Failed to ${error.operation}. ${error.fault} with value ${error.value}` };
+				return { warning: true, message: `Failed to ${error.operation}. ${error.fault} with value ${error.value}` }
 			// Argument Errors
 			case 'INVALID_ARGUMENT':
-				return { warning: true, message: `EthersJS received an invalid argument, "${error.argument}" with value ${JSON.stringify(error.value)}. This is a bug and you should report it. ${error.stack ?? ''}` };
+				return { warning: true, message: `EthersJS received an invalid argument, "${error.argument}" with value ${JSON.stringify(error.value)}. This is a bug and you should report it. ${error.stack ?? ''}` }
 			case 'MISSING_ARGUMENT':
-				return { warning: true, message: `EthersJS expected ${error.count} arguments and received ${error.expectedCount}. This is a bug and you should report it. ${error.stack ?? ''}` };
+				return { warning: true, message: `EthersJS expected ${error.count} arguments and received ${error.expectedCount}. This is a bug and you should report it. ${error.stack ?? ''}` }
 			case 'UNEXPECTED_ARGUMENT':
-				return { warning: true, message: `EthersJS received too many arguments. This is a bug and you should report it. ${error.stack ?? ''}` };
+				return { warning: true, message: `EthersJS received too many arguments. This is a bug and you should report it. ${error.stack ?? ''}` }
 			// Blockchain Errors
 			case 'CALL_EXCEPTION':
 				if (error.receipt) {
 					return { warning: true, message: `Transaction was included in block #${error.receipt.blockNumber} but reverted${error.reason ? ` with error: ${error.reason}`: ''}` }
 				} else {
-					return { warning: true, message: error.reason ? `Transaction will fail. Call exeception during ${error.action}: ${error.reason}`: `The transaction will revert. ${error.reason ?? ''}` };
+					return { warning: true, message: error.reason ? `Transaction will fail. Call exeception during ${error.action}: ${error.reason}`: `The transaction will revert. ${error.reason ?? ''}` }
 				}
 			case 'INSUFFICIENT_FUNDS':
-				return { warning: true, message: `Account ${error.transaction.from} does not have enough funds for this transaction.` };
+				return { warning: true, message: `Account ${error.transaction.from} does not have enough funds for this transaction.` }
 			case 'NONCE_EXPIRED':
-				return { warning: true, message: `Account ${error.transaction.from} has already made a transaction with the same nonce. Call the transaction again with a new nonce.` }; // Whats human readable / user friendly here?
+				return { warning: true, message: `Account ${error.transaction.from} has already made a transaction with the same nonce. Call the transaction again with a new nonce.` } // Whats human readable / user friendly here?
 			case 'REPLACEMENT_UNDERPRICED':
-				return { warning: true, message: `Unimplemented ${error.code}` };
+				return { warning: true, message: `Unimplemented ${error.code}` }
 			case 'TRANSACTION_REPLACED':
-				return { warning: true, message: `Unimplemented ${error.code}` };
+				return { warning: true, message: `Unimplemented ${error.code}` }
 			case 'UNCONFIGURED_NAME':
-				return { warning: true, message: `Could not find ${error.value}. This ENS address may not be registered.` };
+				return { warning: true, message: `Could not find ${error.value}. This ENS address may not be registered.` }
 			case 'OFFCHAIN_FAULT':
-				return { warning: true, message: `Offchain CCIP Error: ${error.reason}` };
+				return { warning: true, message: `Offchain CCIP Error: ${error.reason}` }
 			// User Interaction Errors
 			case 'ACTION_REJECTED':
-				return { warning: false, message: 'User rejected the request' };
+				return { warning: false, message: 'User rejected the request' }
 			default:
-				console.error("Found UNKNOWN_ERROR error: ", error)
+				console.error('Found UNKNOWN_ERROR error: ', error)
 				return { warning: true, message: `Unknown error: ${JSON.stringify(error)}` }
 		}
 	} else {
 		// string, code, extra?, fallback
-		console.error("Found unknown error: ", error)
+		console.error('Found unknown error: ', error)
 		return { warning: true, message: `Unknown Error: ${typeof error === 'string' ? error : JSON.stringify(error)}` }
 	}
 }
