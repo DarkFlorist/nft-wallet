@@ -12,6 +12,7 @@ import { EthereumAddress } from '../types/ethereumTypes.js'
 import { serialize } from '../types/wireTypes.js'
 import { useAsyncState } from '../library/asyncState.js'
 import { SingleNotice } from './Notice.js'
+import { HumanReadableEthersError } from '../library/humanEthersErrors.js'
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const selectedNft = useSignal<ERC721 | ERC1155 | undefined>(undefined)
@@ -150,7 +151,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		}
 	}
 
-	const { value: transactionReceipt, waitFor: waitForTransaction } = useAsyncState<TransactionResponse>()
+	const { value: transactionReceipt, waitFor: waitForTransaction } = useAsyncState<TransactionResponse, HumanReadableEthersError>()
 
 	async function sendTransfer() {
 		if (!selectedNft.value || !recipientAddress.value || !provider.value) return
@@ -203,7 +204,7 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 				? <Button variant='full' disabled={sendText.value !== 'Send'} onClick={sendTransfer}>{sendText.value}</Button>
 				: <Button variant='full' onClick={() => connectBrowserProvider(provider, blockInfo)}>Connect Wallet</Button>
 			}
-			{transactionReceipt.value.state === 'rejected' ? <SingleNotice variant='error' description={transactionReceipt.value.error.message} title="Error Sending Transfer" /> : null}
+			{transactionReceipt.value.state === 'rejected' && transactionReceipt.value.error.warning ? <SingleNotice variant='error' description={transactionReceipt.value.error.message} title="Error Sending Transfer" /> : null}
 			{transactionReceipt.value.state === 'resolved' ? <SingleNotice variant='success' description={`Transaction Hash: ${transactionReceipt.value.value.hash}`} title="Tranaction Submitted" /> : null}
 		</div>
 	)
