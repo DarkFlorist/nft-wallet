@@ -1,5 +1,5 @@
 import { batch, Signal, useComputed, useSignal, useSignalEffect } from '@preact/signals'
-import { getAddress } from 'ethers'
+import { getAddress, TransactionResponse } from 'ethers'
 import { connectBrowserProvider, ProviderStore } from '../library/provider.js'
 import { itentifyAddress, ERC721, ERC1155, SupportedToken } from '../library/identifyTokens.js'
 import { BlockInfo } from '../library/types.js'
@@ -10,6 +10,9 @@ import { BlockieTextInput, NumberInput, TextInput, TokenAmountInput } from './In
 import { ItemDetails } from './ItemDetails.js'
 import { EthereumAddress } from '../types/ethereumTypes.js'
 import { serialize } from '../types/wireTypes.js'
+import { useAsyncState } from '../library/asyncState.js'
+import { SingleNotice } from './Notice.js'
+import { humanReadableEthersError } from '../library/humanEthersErrors.js'
 
 export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderStore | undefined>, blockInfo: Signal<BlockInfo> }) => {
 	const selectedNft = useSignal<ERC721 | ERC1155 | undefined>(undefined)
@@ -61,7 +64,6 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 			}
 		})
 	}
-
 
 	useSignalEffect(() => {
 		if (provider.value) {
@@ -125,17 +127,6 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		}
 		fetchingStates.value = 'fetching'
 		try {
-// <<<<<<< HEAD
-			// const identifiedAddress = await itentifyAddress(address, id, provider.value?.provider, provider.value?.walletAddress)
-			// if (identifiedAddress.address === contractAddress.value && identifiedAddress.inputId === itemId.value) {
-			// 	if (identifiedAddress.type === 'ERC721') {
-			// 		selectedNft.value = identifiedAddress
-
-			// 	} else if (identifiedAddress.type === 'ERC1155') {
-			// 		selectedNft.value = identifiedAddress
-			// 	} else if (identifiedAddress.type === 'ERC20') {
-			// 		warning.value = 'Token address provided is an ERC20 contract'
-// =======
 			const identifiedAssets = await itentifyAddress(address, id, provider.value?.provider, provider.value?.walletAddress)
 			if (identifiedAssets[0].address === contractAddress.value && identifiedAssets[0].inputId === itemId.value) {
 				const supportedTypes = identifiedAssets.filter((token): token is SupportedToken => ['ERC721', 'ERC1155'].includes(token.type))
@@ -160,9 +151,20 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 		}
 	}
 
-	function sendTransfer() {
-		if (selectedNft.value && recipientAddress.value && provider.value && selectedNft.value.type === 'ERC721') transferERC721(selectedNft.value, recipientAddress.value, provider.value.provider)
-		if (selectedNft.value && recipientAddress.value && provider.value && transferAmount.value && selectedNft.value.type === 'ERC1155') transferERC1155(selectedNft.value, serialize(EthereumAddress, provider.value.walletAddress), recipientAddress.value, transferAmount.value, provider.value.provider)
+	const { value: transactionReceipt, waitFor: waitForTransaction } = useAsyncState<TransactionResponse>()
+
+	async function sendTransfer() {
+		if (!selectedNft.value || !recipientAddress.value || !provider.value) return
+
+		if (selectedNft.value.type === 'ERC721') {
+			const txRequestPromise = transferERC721(selectedNft.value, recipientAddress.value, provider.value.provider)
+			return waitForTransaction(() => txRequestPromise)
+		}
+
+		if (selectedNft.value.type === 'ERC1155' && transferAmount.value) {
+			const txRequestPromise = transferERC1155(selectedNft.value, serialize(EthereumAddress, provider.value.walletAddress), recipientAddress.value, transferAmount.value, provider.value.provider)
+			return waitForTransaction(() => txRequestPromise)
+		}
 	}
 
 	return (
@@ -197,20 +199,13 @@ export const Transfer = ({ provider, blockInfo }: { provider: Signal<ProviderSto
 				</div>
 			) : null}
 			<BlockieTextInput value={recipientInput} label='Recipient Address' warn={showWarn.value.recipient} placeholder='0x133...789' />
-			{warning.value ? (
-				<div class='flex items-center items-center border border-orange-400/50 bg-orange-400/10 px-4 py-2 gap-4'>
-					ⓘ
-					<div class='py-3 flex-grow'>
-						<div>
-							<strong>Warning:</strong> {warning}
-						</div>
-					</div>
-				</div>
-			) : null}
+			{warning.value ? <SingleNotice variant='warn' description={warning.value} title='Warning' /> : null}
 			{provider.value
 				? <Button variant='full' disabled={sendText.value !== 'Send'} onClick={sendTransfer}>{sendText.value}</Button>
 				: <Button variant='full' onClick={() => connectBrowserProvider(provider, blockInfo)}>Connect Wallet</Button>
 			}
+			{transactionReceipt.value.state === 'rejected' && humanReadableEthersError(transactionReceipt.value.error).warning ? <SingleNotice variant='error' description={humanReadableEthersError(transactionReceipt.value.error).message} title='Error Sending Transfer' /> : null}
+			{transactionReceipt.value.state === 'resolved' ? <SingleNotice variant='success' description={`Transaction Hash: ${transactionReceipt.value.value.hash}`} title='Tranaction Submitted' /> : null}
 		</div>
 	)
 }
