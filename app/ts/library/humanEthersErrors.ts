@@ -78,11 +78,11 @@ export function humanReadableEthersError(error: unknown): HumanReadableEthersErr
 			case 'INSUFFICIENT_FUNDS':
 				return { warning: true, message: `Account ${error.transaction.from} does not have enough funds for this transaction.` }
 			case 'NONCE_EXPIRED':
-				return { warning: true, message: `Account ${error.transaction.from} has already made a transaction with the same nonce. Call the transaction again with a new nonce.` } // Whats human readable / user friendly here?
+				return { warning: true, message: `The transaction from ${error.transaction.from} got replaced by a transaction with the same nonce.` }
 			case 'REPLACEMENT_UNDERPRICED':
-				return { warning: true, message: `Unimplemented ${error.code}` }
+				return { warning: true, message: `The replacement transaction is underpriced.` }
 			case 'TRANSACTION_REPLACED':
-				return { warning: true, message: `Unimplemented ${error.code}` }
+				return { warning: true, message: `The transaction got replaced by a transaction with the same nonce` }
 			case 'UNCONFIGURED_NAME':
 				return { warning: true, message: `Could not find ${error.value}. This ENS address may not be registered.` }
 			case 'OFFCHAIN_FAULT':
@@ -91,8 +91,8 @@ export function humanReadableEthersError(error: unknown): HumanReadableEthersErr
 			case 'ACTION_REJECTED':
 				return { warning: false, message: 'User rejected the request' }
 			default:
-				console.error('Found UNKNOWN_ERROR error: ', error)
-				return { warning: true, message: `Unknown error: ${JSON.stringify(error)}` }
+				console.error('Found unknown error: ', error)
+				return { warning: true, message: `Unknown Error: ${typeof error === 'string' ? error : JSON.stringify(error)}` }
 		}
 	} else {
 		// string, code, extra?, fallback

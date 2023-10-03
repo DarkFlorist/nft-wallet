@@ -2,11 +2,11 @@ import { Signal, useSignal } from '@preact/signals'
 export type Inactive = { state: 'inactive' }
 export type Pending = { state: 'pending' }
 export type Resolved<T> = { state: 'resolved'; value: T }
-export type Rejected<E> = { state: 'rejected'; error: E }
-export type AsyncProperty<T, E> = Inactive | Pending | Resolved<T> | Rejected<E>
-export type AsyncState<T, E> = { value: Signal<AsyncProperty<T, E>>; waitFor: (resolver: () => Promise<T>) => void; reset: () => void }
+export type Rejected = { state: 'rejected'; error: Error }
+export type AsyncProperty<T> = Inactive | Pending | Resolved<T> | Rejected
+export type AsyncState<T> = { value: Signal<AsyncProperty<T>>; waitFor: (resolver: () => Promise<T>) => void; reset: () => void }
 
-export function useAsyncState<T, E = unknown>(): AsyncState<T, E> {
+export function useAsyncState<T>(): AsyncState<T> {
 	function getCaptureAndCancelOthers() {
 		// delete previously captured signal so any pending async work will no-op when they resolve
 		delete captureContainer.peek().result
@@ -18,7 +18,7 @@ export function useAsyncState<T, E = unknown>(): AsyncState<T, E> {
 	async function activate(resolver: () => Promise<T>) {
 		const capture = getCaptureAndCancelOthers()
 		// we need to read the property out of the capture every time we look at it, in case it is deleted asynchronously
-		function setCapturedResult(newResult: AsyncProperty<T, E>) {
+		function setCapturedResult(newResult: AsyncProperty<T>) {
 			const result = capture.result
 			if (result === undefined) return
 			result.value = newResult
@@ -30,7 +30,7 @@ export function useAsyncState<T, E = unknown>(): AsyncState<T, E> {
 			const resolvedState = { state: 'resolved' as const, value: resolvedValue }
 			setCapturedResult(resolvedState)
 		} catch (unknownError: unknown) {
-			const error = unknownError as E
+			const error = unknownError instanceof Error ? unknownError : typeof unknownError === 'string' ? new Error(unknownError) : new Error(`Unknown error occurred.\n${JSON.stringify(unknownError)}`)
 			const rejectedState = { state: 'rejected' as const, error }
 			setCapturedResult(rejectedState)
 		}
@@ -42,8 +42,8 @@ export function useAsyncState<T, E = unknown>(): AsyncState<T, E> {
 		result.value = { state: 'inactive' }
 	}
 
-	const result = useSignal<AsyncProperty<T, E>>({ state: 'inactive' })
-	const captureContainer = useSignal<{ result?: Signal<AsyncProperty<T, E>> }>({})
+	const result = useSignal<AsyncProperty<T>>({ state: 'inactive' })
+	const captureContainer = useSignal<{ result?: Signal<AsyncProperty<T>> }>({})
 
 	return { value: result, waitFor: resolver => activate(resolver), reset }
 }
