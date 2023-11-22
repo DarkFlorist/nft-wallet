@@ -112,8 +112,8 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 				address,
 				id,
 				owner: nftInterface.decodeFunctionResult('ownerOf', owner.returnData)[0],
-				name: hasMetadata.success ? nftInterface.decodeFunctionResult('name', name.returnData)[0] : undefined,
-				tokenURI: hasMetadata.success ? nftInterface.decodeFunctionResult('tokenURI', tokenURI.returnData)[0] : undefined,
+				name: hasMetadata.success && nftInterface.decodeFunctionResult('supportsInterface', hasMetadata.returnData)[0] ? nftInterface.decodeFunctionResult('name', name.returnData)[0] : undefined,
+				tokenURI: hasMetadata.success && nftInterface.decodeFunctionResult('supportsInterface', hasMetadata.returnData)[0] ? nftInterface.decodeFunctionResult('tokenURI', tokenURI.returnData)[0] : undefined,
 			})
 		}
 	} catch (error) {
