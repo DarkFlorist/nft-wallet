@@ -1,0 +1,1 @@
+{"version":3,"file":"Transfer.d.ts","sourceRoot":"","sources":["../../ts/components/Transfer.tsx"],"names":[],"mappings":"AAAA,OAAO,EAAS,MAAM,EAA2C,MAAM,iBAAiB,CAAA;AAExF,OAAO,EAA0B,aAAa,EAAE,MAAM,wBAAwB,CAAA;AAE9E,OAAO,EAAE,SAAS,EAAE,MAAM,qBAAqB,CAAA;AAY/C,eAAO,MAAM,QAAQ;cAAyC,OAAO,aAAa,GAAG,SAAS,CAAC;eAAa,OAAO,SAAS,CAAC;kCAkM5H,CAAA"}

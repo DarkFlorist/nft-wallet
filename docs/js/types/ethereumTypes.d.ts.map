@@ -1,0 +1,1 @@
+{"version":3,"file":"ethereumTypes.d.ts","sourceRoot":"","sources":["../../ts/types/ethereumTypes.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,CAAC,MAAM,UAAU,CAAA;AAE7B,eAAO,MAAM,aAAa,EAAE,CAAC,CAAC,WAAW,CAAC,CAAC,CAAC,MAAM,EAAE,MAAM,CAAC,CAAC,QAAQ,CAanE,CAAA;AAED,eAAO,MAAM,eAAe,iCAAqC,CAAA;AACjE,MAAM,MAAM,eAAe,GAAG,CAAC,CAAC,MAAM,CAAC,OAAO,eAAe,CAAC,CAAA"}

@@ -1,0 +1,19 @@
+import { jsx as _jsx, jsxs as _jsxs } from "preact/jsx-runtime";
+import { useComputed, useSignal } from '@preact/signals';
+import { getAddress } from 'ethers';
+import { EthereumAddress } from '../types/ethereumTypes.js';
+import { Blockie } from './Blockie.js';
+export const NumberInput = ({ label, placeholder, size, warn, value }) => (_jsxs("div", { className: `${size ?? ''} flex flex-col justify-center border ${warn ? 'border-red-400' : 'border-white/50 focus-within:border-white/80'} h-16 bg-transparent outline-none focus-within:bg-white/5 px-4 bg-transparent`, children: [_jsx("span", { className: 'text-sm text-white/50 leading-tight', children: label }), _jsx("input", { ...{ placeholder, onInput: (e) => value.value = e.currentTarget.value, value: value.value }, type: 'number', className: 'h-6 bg-transparent outline-none placeholder:text-white/20' })] }));
+export const TextInput = ({ label, placeholder, size, warn, value }) => (_jsxs("div", { className: `${size ?? ''} flex flex-col justify-center border ${warn ? 'border-red-400' : 'border-white/50 focus-within:border-white/80'} h-16 bg-transparent outline-none focus-within:bg-white/5 px-4 bg-transparent`, children: [_jsx("span", { className: 'text-sm text-white/50 leading-tight', children: label }), _jsx("input", { ...{ placeholder, onInput: (e) => value.value = e.currentTarget.value, value: value.value }, type: 'text', className: 'h-6 bg-transparent outline-none placeholder:text-white/20' })] }));
+export const BlockieTextInput = ({ label, placeholder, size, warn, value }) => {
+    const parsedAddress = useComputed(() => {
+        if (warn || !value.value || value.value.length !== 42)
+            return 0n;
+        const parsed = EthereumAddress.safeParse(getAddress(value.value.toLowerCase()));
+        return parsed.success ? parsed.value : 0n;
+    });
+    const blockieSize = useSignal(2);
+    return (_jsxs("div", { className: `${size ?? ''} flex flex-col justify-center border ${warn ? 'border-red-400' : 'border-white/50 focus-within:border-white/80'} h-16 bg-transparent outline-none focus-within:bg-white/5 px-4 bg-transparent`, children: [_jsx("span", { className: 'text-sm text-white/50 leading-tight', children: label }), _jsxs("div", { className: 'w-full flex gap-2 items-center', children: [!warn && value.value ? _jsx(Blockie, { address: parsedAddress, scale: blockieSize }) : null, _jsx("input", { ...{ placeholder, onInput: (e) => value.value = e.currentTarget.value, value: value.value }, type: 'text', className: 'grow h-6 bg-transparent outline-none placeholder:text-white/20' })] })] }));
+};
+export const TokenAmountInput = ({ label, placeholder, value, size, warn, balance }) => (_jsxs("div", { className: `${size ?? ''} flex flex-wrap justify-center border ${warn ? 'border-red-400' : 'border-white/50 focus-within:border-white/80'} bg-transparent outline-none focus-within:bg-white/5 px-4 bg-transparent`, children: [_jsxs("div", { className: 'flex flex-col h-16 flex-grow justify-center', children: [_jsx("span", { className: 'text-sm text-white/50', children: label }), _jsx("input", { ...{ placeholder, onInput: (e) => value.value = e.currentTarget.value, value: value.value }, type: 'number', className: 'h-6 bg-transparent outline-none placeholder:text-white/20' })] }), _jsxs("div", { className: 'flex gap-2 items-center h-16', children: [_jsxs("span", { className: 'text-sm text-white/70', children: ["Balance: ", balance] }), _jsx("button", { className: 'p-2 outline-none border border-white/50 focus:border-white text-xs text-white/50 focus:text-white hover:text-white hover:border-white disabled:opacity-50', onClick: () => value.value = String(balance), children: "Max" })] })] }));
+//# sourceMappingURL=Inputs.js.map
