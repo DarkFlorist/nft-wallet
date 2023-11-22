@@ -146,7 +146,7 @@ export async function itentifyAddress(address: string, id: bigint, provider: Pro
 				inputId: id,
 				address,
 				name: erc20Interface.decodeFunctionResult('name', name.returnData)[0],
-				symbol: erc20Interface.decodeFunctionResult('name', symbol.returnData)[0],
+				symbol: erc20Interface.decodeFunctionResult('symbol', symbol.returnData)[0],
 				decimals: BigInt(erc20Interface.decodeFunctionResult('decimals', decimals.returnData)[0]),
 				totalSupply: erc20Interface.decodeFunctionResult('totalSupply', totalSupply.returnData)[0]
 			})
