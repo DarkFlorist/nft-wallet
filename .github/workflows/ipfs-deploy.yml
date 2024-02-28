@@ -84,7 +84,7 @@ jobs:
           $IPFS_HASH
           \`\`\`
 
-          You can view published versions of Lunaria through any IPFS Gateway
+          You can view published versions of NFT Sender through any IPFS Gateway
 
           [ipfs://$IPFS_HASH](ipfs://$IPFS_HASH) __(Recommended)__
           _requires Brave Browser or IPFS Desktop_
