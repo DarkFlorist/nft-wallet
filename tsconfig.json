@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"target": "ES2021",
 		"module": "ES2020",
-		"moduleResolution": "node16",
+		"moduleResolution": "node",
 		"rootDir": "app/ts",
 		"outDir": "app/js",
 		"sourceMap": true,
@@ -16,17 +16,9 @@
 		"noImplicitThis": true,
 		"jsx": "react-jsx",
 		"jsxImportSource": "preact",
-		"lib": [
-			"ES2021",
-			"DOM"
-		],
-		"typeRoots": [
-			"./node_modules/@types",
-			"./typings"
-		]
+		"lib": ["ES2021", "DOM"],
+		"typeRoots": ["./node_modules/@types", "./typings"],
+		"types": []
 	},
-	"include": [
-		"./app/ts/**/*.ts",
-		"./app/ts/**/*.tsx"
-	]
+	"include": ["./app/ts/**/*.ts", "./app/ts/**/*.tsx"]
 }
